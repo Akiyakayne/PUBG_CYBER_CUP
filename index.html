@@ -250,15 +250,6 @@
             font-weight: 600;
         }
 
-        .error-message {
-            background: #ff4444;
-            color: white;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 10px 0;
-            text-align: center;
-        }
-
         .last-update {
             text-align: right;
             color: #a0a0a0;
@@ -363,9 +354,9 @@
     </div>
 
     <script>
-        // КОНФИГУРАЦИЯ - ЗАМЕНИТЕ НА СВОИ РЕАЛЬНЫЕ ЗНАЧЕНИЯ!
+        // Конфигурация Google Sheets
         const CONFIG = {
-            SPREADSHEET_ID: '1jjpWcMFeoObXZYz43aPzBCE2fdWWG8kvC2QtqaYdKH8',
+            SPREADSHEET_ID: '1m_7tJLsB62uPuMx_4nM8v3P7O6Ak2P6_wN30h7dCT_8',
             SHEETS: {
                 MAIN: 'ОСНОВНАЯ ТАБЛИЦА',
                 TEAMS: 'ТАБЛИЦА ПО КОМАНДАМ',
@@ -373,68 +364,8 @@
             }
         };
 
-        // Инициализация Google API
-        async function initGoogleApi() {
-            return new Promise((resolve, reject) => {
-                gapi.load('client', async () => {
-                    try {
-                        await gapi.client.init({
-                            apiKey: CONFIG.API_KEY,
-                            discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-                        });
-                        console.log('Google API инициализирован');
-                        resolve();
-                    } catch (error) {
-                        console.error('Ошибка инициализации Google API:', error);
-                        reject(error);
-                    }
-                });
-            });
-        }
-
-        // Функция для получения данных через Google Sheets API
+        // Функция для получения данных из Google Sheets (публичный доступ)
         async function fetchSheetData(sheetName) {
-            try {
-                await initGoogleApi();
-                
-                const response = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: CONFIG.SPREADSHEET_ID,
-                    range: sheetName,
-                });
-                
-                const rows = response.result.values;
-                
-                if (rows && rows.length > 0) {
-                    const headers = rows[0];
-                    const data = [];
-                    
-                    for (let i = 1; i < rows.length; i++) {
-                        const row = rows[i];
-                        const obj = {};
-                        
-                        headers.forEach((header, index) => {
-                            obj[header] = row[index] || '';
-                        });
-                        
-                        data.push(obj);
-                    }
-                    
-                    return data;
-                }
-                
-                return [];
-                
-            } catch (error) {
-                console.error('Ошибка загрузки через API:', error);
-                showUserError(error);
-                
-                // Пробуем запасной вариант (публичный доступ)
-                return await fetchSheetDataPublic(sheetName);
-            }
-        }
-
-        // Запасной вариант - публичный доступ
-        async function fetchSheetDataPublic(sheetName) {
             try {
                 const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
                 
@@ -447,7 +378,7 @@
                 return parseCSV(csvText);
                 
             } catch (error) {
-                console.error('Ошибка загрузки (публичный доступ):', error);
+                console.error('Ошибка загрузки:', error);
                 return [];
             }
         }
@@ -478,31 +409,6 @@
             return data;
         }
 
-        // Показать ошибку пользователю
-        function showUserError(error) {
-            const errorMessage = document.createElement('div');
-            errorMessage.className = 'error-message';
-            errorMessage.innerHTML = `
-                <strong>Ошибка доступа к таблице</strong><br>
-                ${error.message || 'Неизвестная ошибка'}<br><br>
-                <small>Проверьте:<br>
-                1. API ключ правильный<br>
-                2. Таблица доступна для чтения<br>
-                3. ID таблицы правильный</small>
-            `;
-            
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                const loadingEl = tab.querySelector('.loading');
-                const containerEl = tab.querySelector('[id$="-container"], [id$="-table-container"]');
-                if (loadingEl) loadingEl.style.display = 'none';
-                if (containerEl) {
-                    containerEl.innerHTML = '';
-                    containerEl.appendChild(errorMessage.cloneNode(true));
-                    containerEl.style.display = 'block';
-                }
-            });
-        }
-
         // Обновить время последнего обновления
         function updateLastUpdateTime() {
             const now = new Date();
@@ -529,7 +435,7 @@
             
             if (data.length === 0) {
                 loadingEl.style.display = 'none';
-                containerEl.innerHTML = '<p class="error-message">Нет данных для отображения</p>';
+                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Нет данных для отображения</p>';
                 containerEl.style.display = 'block';
                 return;
             }
@@ -572,7 +478,7 @@
             
             if (data.length === 0) {
                 loadingEl.style.display = 'none';
-                containerEl.innerHTML = '<p class="error-message">Нет данных для отображения</p>';
+                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Нет данных для отображения</p>';
                 containerEl.style.display = 'block';
                 return;
             }
@@ -632,7 +538,7 @@
             
             if (data.length === 0) {
                 loadingEl.style.display = 'none';
-                containerEl.innerHTML = '<p class="error-message">Нет данных для отображения</p>';
+                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Нет данных для отображения</p>';
                 containerEl.style.display = 'block';
                 return;
             }
@@ -686,7 +592,7 @@
             // Имитация загрузки
             setTimeout(() => {
                 loadingEl.style.display = 'none';
-                containerEl.innerHTML = '<p class="info-item" style="padding: 20px; text-align: center;">Таблица по дням находится в разработке</p>';
+                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Таблица по дням находится в разработке</p>';
                 containerEl.style.display = 'block';
                 updateLastUpdateTime();
             }, 1000);
@@ -766,18 +672,16 @@
         function filterByTeam() {
             const team = document.getElementById('teamFilter').value;
             console.log('Фильтр по команде:', team);
-            // Здесь можно добавить логику фильтрации
         }
 
         function filterByPlayer() {
             const player = document.getElementById('playerFilter').value;
             console.log('Фильтр по игроку:', player);
-            // Здесь можно добавить логику фильтрации
         }
 
         // Инициализация при загрузке страницы
         window.onload = async function() {
-            console.log('Страница загружена, CONFIG:', CONFIG);
+            console.log('Страница загружена');
             await loadMainTable();
             await loadTeamsStats();
             await loadPlayersStats();
