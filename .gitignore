@@ -11,6 +11,7 @@ desktop.ini
 *~
 
 # Локальные конфиги
+config.local.js
 config.js
 .env
 *.local
