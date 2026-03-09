@@ -222,7 +222,7 @@
         
         .team-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
@@ -242,12 +242,28 @@
             font-size: 1.3rem;
         }
         
+        .stat-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+        }
+        
+        .stat-section-title {
+            color: #f7b731;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
         .stat-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            padding: 4px 0;
             border-bottom: 1px dashed #3a4050;
-            padding-bottom: 5px;
         }
         
         .stat-label {
@@ -255,7 +271,7 @@
         }
         
         .stat-value {
-            color: #f7b731;
+            color: #fff;
             font-weight: 600;
         }
         
@@ -537,7 +553,7 @@
             updateLastUpdateTime();
         }
 
-        // Загрузка статистики команд - НОВАЯ ВЕРСИЯ с составом из таблицы игроков
+        // Загрузка статистики команд
         async function loadTeamsStats() {
             const loadingEl = document.getElementById('teams-loading');
             const containerEl = document.getElementById('teams-container');
@@ -594,32 +610,81 @@
                     html += '</div></div>';
                 }
                 
-                // Добавляем остальную статистику
-                html += '<div style="margin-top: 15px;">';
+                // Основная статистика
+                html += '<div class="stat-section">';
+                html += '<div class="stat-section-title">📊 Основная статистика</div>';
                 
-                const stats = [
-                    {label: '📊 Матчи', value: row['Number Of Matches']},
-                    {label: '💰 Всего очков', value: row['Total Points']},
-                    {label: '🏆 WWCD (победы)', value: row['WWCD']},
-                    {label: '🎯 Очки за места', value: row['Place Pts']},
-                    {label: '💀 Киллы', value: row['Kills']},
-                    {label: '🤝 Ассисты', value: row['Assists']},
-                    {label: '💥 Урон', value: row['Damage Dealt']},
-                    {label: '🛡️ Получено урона', value: row['Damage Taken']},
-                    {label: '👊 Нокауты', value: row['Knocks']},
-                    {label: '💊 Реанимации', value: row['Revives']},
-                    {label: '🎯 Хедшоты', value: row['Headshot Kills']},
-                    {label: '💉 Хилы', value: row['Heals']},
-                    {label: '⚡ Бусты', value: row['Boosts']}
+                const mainStats = [
+                    {label: 'Матчи', value: row['Number Of Matches']},
+                    {label: 'WWCD (победы)', value: row['WWCD']},
+                    {label: 'Киллы', value: row['Kills']},
+                    {label: 'Ассисты', value: row['Assists']}
                 ];
                 
-                stats.forEach(stat => {
+                mainStats.forEach(stat => {
                     if (stat.value && stat.value !== '0' && stat.value !== '') {
                         html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
                     }
                 });
-                
                 html += '</div>';
+                
+                // Боевая статистика
+                html += '<div class="stat-section">';
+                html += '<div class="stat-section-title">⚔️ Боевая статистика</div>';
+                
+                const combatStats = [
+                    {label: 'Урон нанесенный', value: row['Damage Dealt']},
+                    {label: 'Урон полученный', value: row['Damage Taken']},
+                    {label: 'Нокауты', value: row['Knocks']},
+                    {label: 'Реанимации', value: row['Revives']},
+                    {label: 'Хедшоты', value: row['Headshot Kills']},
+                    {label: 'Украденные убийства', value: row['Stolen Kills']},
+                    {label: 'Потерянные убийства', value: row['Lost Kills']},
+                    {label: 'Уничтожено транспорта', value: row['Vehicle Destroys']}
+                ];
+                
+                combatStats.forEach(stat => {
+                    if (stat.value && stat.value !== '0' && stat.value !== '') {
+                        html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
+                    }
+                });
+                html += '</div>';
+                
+                // Медицина и поддержка
+                html += '<div class="stat-section">';
+                html += '<div class="stat-section-title">💊 Медицина</div>';
+                
+                const medicStats = [
+                    {label: 'Аптечки', value: row['Heals']},
+                    {label: 'Здоровье восстановлено', value: row['Health Recovered']},
+                    {label: 'Бусты', value: row['Boosts']}
+                ];
+                
+                medicStats.forEach(stat => {
+                    if (stat.value && stat.value !== '0' && stat.value !== '') {
+                        html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
+                    }
+                });
+                html += '</div>';
+                
+                // Перемещение
+                html += '<div class="stat-section">';
+                html += '<div class="stat-section-title">🏃 Перемещение</div>';
+                
+                const movementStats = [
+                    {label: 'Время выживания', value: row['Time Survived']},
+                    {label: 'Дистанция (плавание)', value: row['Swimming Distance (km)'] ? row['Swimming Distance (km)'] + ' км' : ''},
+                    {label: 'Дистанция (пешком)', value: row['Walk Distance (km)'] ? row['Walk Distance (km)'] + ' км' : ''},
+                    {label: 'Дистанция (транспорт)', value: row['Ride Distance (km)'] ? row['Ride Distance (km)'] + ' км' : ''}
+                ];
+                
+                movementStats.forEach(stat => {
+                    if (stat.value && stat.value !== '0' && stat.value !== '') {
+                        html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
+                    }
+                });
+                html += '</div>';
+                
                 html += '</div>';
             });
             
@@ -649,15 +714,33 @@
             }
             
             let html = '<table><thead><tr>';
-            html += '<th>Игрок</th><th>Команда</th>';
+            html += '<th>Игрок</th><th>Команда</th><th>Матчи</th><th>K/D</th><th>KDA</th><th>Киллы</th><th>Смерти</th><th>Ассисты</th><th>Нокауты</th><th>Урон</th><th>Реанимации</th><th>Хедшоты</th><th>Longest Kill</th>';
             html += '</tr></thead><tbody>';
             
             data.forEach(row => {
                 if (!row['Player'] || row['Player'] === 'Player' || row['Player'].trim() === '') return;
                 
+                const kills = parseFloat(row['Kills']) || 0;
+                const deaths = parseFloat(row['Death']) || 1;
+                const assists = parseFloat(row['Assists']) || 0;
+                
+                const kd = (kills / deaths).toFixed(2);
+                const kda = ((kills + assists) / deaths).toFixed(2);
+                
                 html += '<tr>';
                 html += `<td><strong>${row['Player']}</strong></td>`;
                 html += `<td>${row['Team'] || '-'}</td>`;
+                html += `<td>${row['Number of Matches'] || '0'}</td>`;
+                html += `<td>${kd}</td>`;
+                html += `<td>${kda}</td>`;
+                html += `<td>${kills}</td>`;
+                html += `<td>${row['Death'] || '0'}</td>`;
+                html += `<td>${assists}</td>`;
+                html += `<td>${row['Knocks'] || '0'}</td>`;
+                html += `<td>${row['Damage Dealt'] || '0'}</td>`;
+                html += `<td>${row['Revives'] || '0'}</td>`;
+                html += `<td>${row['Headshot Kills'] || '0'}</td>`;
+                html += `<td>${row['Longest Kill (m)'] || '0'}м</td>`;
                 html += '</tr>';
             });
             
