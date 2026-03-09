@@ -262,11 +262,15 @@
             background: rgba(0,0,0,0.2);
             border-radius: 5px;
             font-size: 0.9rem;
-            color: #a0a0a0;
+            color: #f7b731;
+            line-height: 1.5;
         }
         
         .players-list span {
-            color: #f7b731;
+            color: #a0a0a0;
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
         }
 
         .last-update {
@@ -333,30 +337,14 @@
         
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('main', event)">📊 ОСНОВНАЯ ТАБЛИЦА</button>
-            <button class="tab-btn" onclick="switchTab('days', event)">📅 ТАБЛИЦА ПО ДНЯМ</button>
             <button class="tab-btn" onclick="switchTab('teams', event)">👥 СТАТИСТИКА КОМАНД</button>
             <button class="tab-btn" onclick="switchTab('players', event)">🎮 СТАТИСТИКА ИГРОКОВ</button>
-        </div>
-        
-        <div class="filters" id="filters-container" style="display: none;">
-            <select class="filter-select" id="teamFilter" onchange="filterByTeam()">
-                <option value="all">Все команды</option>
-            </select>
-            <select class="filter-select" id="playerFilter" onchange="filterByPlayer()">
-                <option value="all">Все игроки</option>
-            </select>
         </div>
         
         <!-- Основная таблица -->
         <div id="main-tab" class="tab-content active">
             <div class="loading" id="main-loading">Загрузка основной таблицы...</div>
             <div id="main-table-container" style="display: none;"></div>
-        </div>
-        
-        <!-- Таблица по дням -->
-        <div id="days-tab" class="tab-content">
-            <div class="loading" id="days-loading">Загрузка таблицы по дням...</div>
-            <div id="days-table-container" style="display: none;"></div>
         </div>
         
         <!-- Статистика команд -->
@@ -380,7 +368,6 @@
             SPREADSHEET_ID: '1jjpWcMFeoObXZYz43aPzBCE2fdWWG8kvC2QtqaYdKH8',
             SHEETS: {
                 MAIN: 'ОСНОВНАЯ ТАБЛИЦА',
-                DAYS: 'ТАБЛИЦА ПО ДНЯМ',
                 TEAMS: 'ТАБЛИЦА ПО КОМАНДАМ',
                 PLAYERS: 'ТАБЛИЦА ПО ИГРОКАМ'
             }
@@ -495,69 +482,7 @@
             updateLastUpdateTime();
         }
 
-        // Загрузка таблицы по дням
-        async function loadDaysTable() {
-            const loadingEl = document.getElementById('days-loading');
-            const containerEl = document.getElementById('days-table-container');
-            
-            loadingEl.style.display = 'block';
-            containerEl.style.display = 'none';
-            
-            const data = await fetchSheetData(CONFIG.SHEETS.DAYS);
-            
-            if (data.length === 0) {
-                loadingEl.style.display = 'none';
-                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Нет данных для отображения</p>';
-                containerEl.style.display = 'block';
-                return;
-            }
-            
-            // Группируем данные по дням
-            const days = [];
-            let currentDay = null;
-            
-            data.forEach(row => {
-                if (row['Номер №'] && row['Название команды']) {
-                    if (!currentDay || currentDay.length >= 16) {
-                        currentDay = [];
-                        days.push(currentDay);
-                    }
-                    currentDay.push(row);
-                }
-            });
-            
-            let html = '';
-            
-            days.forEach((dayData, dayIndex) => {
-                const dayDate = dayData[0]?.['Дата и время (МСК):'] || `День ${dayIndex + 1}`;
-                
-                html += `<h2>${dayDate}</h2>`;
-                html += '<table><thead><tr>';
-                html += '<th>Команда</th><th>Очки за места</th><th>Киллы</th><th>Итого</th>';
-                html += '</tr></thead><tbody>';
-                
-                dayData.forEach(row => {
-                    if (row['Название команды']) {
-                        html += '<tr>';
-                        html += `<td>${row['Название команды']}</td>`;
-                        html += `<td>${row['Очки за места'] || '0'}</td>`;
-                        html += `<td>${row['Киллы'] || '0'}</td>`;
-                        html += `<td>${row['Итого'] || '0'}</td>`;
-                        html += '</tr>';
-                    }
-                });
-                
-                html += '</tbody></table>';
-                if (dayIndex < days.length - 1) html += '<br>';
-            });
-            
-            containerEl.innerHTML = html;
-            loadingEl.style.display = 'none';
-            containerEl.style.display = 'block';
-            updateLastUpdateTime();
-        }
-
-        // Загрузка статистики команд
+        // Загрузка статистики команд - ИСПРАВЛЕНО!
         async function loadTeamsStats() {
             const loadingEl = document.getElementById('teams-loading');
             const containerEl = document.getElementById('teams-container');
@@ -576,17 +501,28 @@
             
             let html = '<div class="team-stats">';
             
+            // Проходим по каждой строке данных
             data.forEach(row => {
-                if (!row['Team']) return;
+                // Проверяем, что это строка с командой (есть название команды)
+                if (!row['Team'] || row['Team'] === 'Team' || row['Team'].trim() === '') return;
                 
                 html += '<div class="stat-card">';
                 html += `<h3>${row['Team']}</h3>`;
                 
-                // Добавляем список игроков
-                if (row['Players']) {
-                    html += `<div class="players-list"><span>Состав:</span> ${row['Players']}</div>`;
+                // Формируем список игроков из поля Players
+                if (row['Players'] && row['Players'].trim() !== '') {
+                    // Разделяем игроков по запятой
+                    const players = row['Players'].split(',').map(p => p.trim()).filter(p => p !== '');
+                    
+                    html += '<div class="players-list">';
+                    html += '<span>Состав команды:</span>';
+                    players.forEach(player => {
+                        html += `<div>• ${player}</div>`;
+                    });
+                    html += '</div>';
                 }
                 
+                // Добавляем остальную статистику
                 const stats = [
                     {label: 'Матчи', value: row['Number Of Matches']},
                     {label: 'Всего очков', value: row['Total Points']},
@@ -600,10 +536,7 @@
                     {label: 'Реанимации', value: row['Revives']},
                     {label: 'Хедшоты', value: row['Headshot Kills']},
                     {label: 'Хилы', value: row['Heals']},
-                    {label: 'Бусты', value: row['Boosts']},
-                    {label: 'Время выживания', value: row['Time Survived']},
-                    {label: 'Дистанция (ходьба)', value: row['Walk Distance (km)'] ? row['Walk Distance (km)'] + ' км' : ''},
-                    {label: 'Дистанция (транспорт)', value: row['Ride Distance (km)'] ? row['Ride Distance (km)'] + ' км' : ''}
+                    {label: 'Бусты', value: row['Boosts']}
                 ];
                 
                 stats.forEach(stat => {
@@ -645,7 +578,7 @@
             html += '</tr></thead><tbody>';
             
             data.forEach(row => {
-                if (!row['Player'] || row['Player'] === 'Player') return;
+                if (!row['Player'] || row['Player'] === 'Player' || row['Player'].trim() === '') return;
                 
                 const kills = parseFloat(row['Kills']) || 0;
                 const deaths = parseFloat(row['Death']) || 1;
@@ -687,20 +620,9 @@
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.getElementById(`${tabName}-tab`).classList.add('active');
             
-            // Показываем/скрываем фильтры в зависимости от вкладки
-            const filtersContainer = document.getElementById('filters-container');
-            if (tabName === 'players' || tabName === 'teams') {
-                filtersContainer.style.display = 'flex';
-            } else {
-                filtersContainer.style.display = 'none';
-            }
-            
             switch(tabName) {
                 case 'main':
                     loadMainTable();
-                    break;
-                case 'days':
-                    loadDaysTable();
                     break;
                 case 'teams':
                     loadTeamsStats();
@@ -711,20 +633,10 @@
             }
         }
 
-        // Фильтры (пока заглушки)
-        function filterByTeam() {
-            console.log('Фильтр по команде:', document.getElementById('teamFilter').value);
-        }
-
-        function filterByPlayer() {
-            console.log('Фильтр по игроку:', document.getElementById('playerFilter').value);
-        }
-
         // Инициализация при загрузке страницы
         window.onload = async function() {
             console.log('Страница загружена');
             await loadMainTable();
-            await loadDaysTable();
             await loadTeamsStats();
             await loadPlayersStats();
         };
