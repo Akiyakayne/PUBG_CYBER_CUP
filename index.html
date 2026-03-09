@@ -32,6 +32,12 @@
             padding-bottom: 10px;
         }
         
+        h2 {
+            color: #f7b731;
+            margin: 20px 0 10px 0;
+            font-size: 1.5rem;
+        }
+        
         .tournament-info {
             background: linear-gradient(135deg, #2a2f3f 0%, #1e2332 100%);
             border-radius: 10px;
@@ -249,13 +255,17 @@
             color: #fff;
             font-weight: 600;
         }
-
+        
         .players-list {
             margin-top: 10px;
             padding: 10px;
-            background: #2a2f3f;
+            background: rgba(0,0,0,0.2);
             border-radius: 5px;
             font-size: 0.9rem;
+            color: #a0a0a0;
+        }
+        
+        .players-list span {
             color: #f7b731;
         }
 
@@ -279,6 +289,10 @@
             td, th {
                 font-size: 0.8rem;
                 padding: 6px 4px;
+            }
+            
+            .team-stats {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -319,12 +333,12 @@
         
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('main', event)">📊 ОСНОВНАЯ ТАБЛИЦА</button>
+            <button class="tab-btn" onclick="switchTab('days', event)">📅 ТАБЛИЦА ПО ДНЯМ</button>
             <button class="tab-btn" onclick="switchTab('teams', event)">👥 СТАТИСТИКА КОМАНД</button>
             <button class="tab-btn" onclick="switchTab('players', event)">🎮 СТАТИСТИКА ИГРОКОВ</button>
-            <button class="tab-btn" onclick="switchTab('days', event)">📅 ТАБЛИЦА ПО ДНЯМ</button>
         </div>
         
-        <div class="filters">
+        <div class="filters" id="filters-container" style="display: none;">
             <select class="filter-select" id="teamFilter" onchange="filterByTeam()">
                 <option value="all">Все команды</option>
             </select>
@@ -339,6 +353,12 @@
             <div id="main-table-container" style="display: none;"></div>
         </div>
         
+        <!-- Таблица по дням -->
+        <div id="days-tab" class="tab-content">
+            <div class="loading" id="days-loading">Загрузка таблицы по дням...</div>
+            <div id="days-table-container" style="display: none;"></div>
+        </div>
+        
         <!-- Статистика команд -->
         <div id="teams-tab" class="tab-content">
             <div class="loading" id="teams-loading">Загрузка статистики команд...</div>
@@ -348,49 +368,23 @@
         <!-- Статистика игроков -->
         <div id="players-tab" class="tab-content">
             <div class="loading" id="players-loading">Загрузка статистики игроков...</div>
-            <div id="players-table-container" style="display: none;"></div>
-        </div>
-        
-        <!-- Таблица по дням -->
-        <div id="days-tab" class="tab-content">
-            <div class="loading" id="days-loading">Загрузка таблицы по дням...</div>
-            <div id="days-table-container" style="display: none;"></div>
+            <div id="players-container" style="display: none;"></div>
         </div>
 
         <div class="last-update" id="last-update"></div>
     </div>
 
     <script>
-        // Конфигурация Google Sheets с вашим ID таблицы
+        // Конфигурация Google Sheets
         const CONFIG = {
             SPREADSHEET_ID: '1jjpWcMFeoObXZYz43aPzBCE2fdWWG8kvC2QtqaYdKH8',
             SHEETS: {
                 MAIN: 'ОСНОВНАЯ ТАБЛИЦА',
+                DAYS: 'ТАБЛИЦА ПО ДНЯМ',
                 TEAMS: 'ТАБЛИЦА ПО КОМАНДАМ',
-                PLAYERS: 'ТАБЛИЦА ПО ИГРОКАМ',
-                DAYS: 'ТАБЛИЦА ПО ДНЯМ'
+                PLAYERS: 'ТАБЛИЦА ПО ИГРОКАМ'
             }
         };
-
-        // Данные команд для фильтрации (из вашей таблицы)
-        const TEAMS_DATA = [
-            { name: 'Минин', players: ['Reka228', 'ping___999', 'AnoNim010', 'MorfEiztrips', 'Asmadey_STOP'] },
-            { name: 'The Clowns', players: ['MGE_Mikhail0', 'Rashkarulit', 'Kipish31', 'MrTruNik'] },
-            { name: 'Стипухи.нет', players: ['Hea9Hunter', 'neP4uK7', 'Zarya1567', 'SorryanchikGame'] },
-            { name: 'Unemployed', players: ['LeY48', 'Heimdddal', 'AnaNaSIkS__', 'HazerYT'] },
-            { name: 'Yeezy', players: ['nertty-', 'dEsEnt1131', 'Milkerio', 'Fashiondemon-'] },
-            { name: 'Dopsa', players: ['Nlaaad', 'joyskipon', 'arcashenka', 'DawCost', 'L1eyve'] },
-            { name: '200h', players: ['inradez', 'Gachbeb', 'Nikigos', 'RAN4K'] },
-            { name: 'Team Oleniy_Sinus', players: ['VsevolodShelbie', 'Decapicator', 'Safller', 'Danyl_May', '6lownada'] },
-            { name: 'PepeWataFa', players: ['R_O_T_N_O', '1_Shilo_1', 'Mokkik', 'Mabeseda', 'Terronlo'] },
-            { name: 'TMIT\'S', players: ['Uchastnik_SVO', 'M0o0ndi', 'SkeyZi', 'Ignat_Zek'] },
-            { name: 'Антон Чигур ВЕЛИКИЙ ПАБГЕР', players: ['PowerfulBulge', 'ReGraser', 'morden101', 'QweRez23'] },
-            { name: 'FourLen', players: ['EGgORIC', 'SkeptikDragon', 'ihak05', 'adammmm0', 'SASAKUURARA', 'Magestiksoso'] },
-            { name: 'Многочлены', players: ['Qu1nkyy', 'tot-kechi', 'Quince_Adenin', 'XUINANI'] },
-            { name: 'Epstein Team', players: ['KOB_S_MOMOM', 'SHEPSHULYA', 'NorbitOneLove', 'VlaceZ'] },
-            { name: 'PUBurGers', players: ['freezerlord', 'Hell0-_-K1tty', 'karym_0', 'Yana_Ya'] },
-            { name: 'Суслики', players: ['Nebe1ung', 'moonseti-', 'absolutemadness', 'ashtr_'] }
-        ];
 
         // Функция для получения данных из Google Sheets
         async function fetchSheetData(sheetName) {
@@ -407,34 +401,8 @@
                 
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
-                // Возвращаем тестовые данные для разработки
-                return getMockData(sheetName);
+                return [];
             }
-        }
-
-        // Тестовые данные для разработки (когда таблица недоступна)
-        function getMockData(sheetName) {
-            if (sheetName === CONFIG.SHEETS.MAIN) {
-                return [
-                    { Rank: '1', Team: 'Минин', Matches: '8', 'Place Pts': '45', Kills: '32', 'Total Points': '77' },
-                    { Rank: '2', Team: 'The Clowns', Matches: '8', 'Place Pts': '38', Kills: '28', 'Total Points': '66' },
-                    { Rank: '3', Team: 'Стипухи.нет', Matches: '8', 'Place Pts': '35', Kills: '25', 'Total Points': '60' },
-                    { Rank: '4', Team: 'Unemployed', Matches: '8', 'Place Pts': '30', Kills: '22', 'Total Points': '52' },
-                    { Rank: '5', Team: 'Yeezy', Matches: '8', 'Place Pts': '28', Kills: '20', 'Total Points': '48' },
-                    { Rank: '6', Team: 'Dopsa', Matches: '8', 'Place Pts': '25', Kills: '18', 'Total Points': '43' },
-                    { Rank: '7', Team: '200h', Matches: '8', 'Place Pts': '22', Kills: '16', 'Total Points': '38' },
-                    { Rank: '8', Team: 'Team Oleniy_Sinus', Matches: '8', 'Place Pts': '20', Kills: '15', 'Total Points': '35' },
-                    { Rank: '9', Team: 'PepeWataFa', Matches: '8', 'Place Pts': '18', Kills: '14', 'Total Points': '32' },
-                    { Rank: '10', Team: 'TMIT\'S', Matches: '8', 'Place Pts': '16', Kills: '13', 'Total Points': '29' },
-                    { Rank: '11', Team: 'Антон Чигур ВЕЛИКИЙ ПАБГЕР', Matches: '8', 'Place Pts': '14', Kills: '12', 'Total Points': '26' },
-                    { Rank: '12', Team: 'FourLen', Matches: '8', 'Place Pts': '12', Kills: '11', 'Total Points': '23' },
-                    { Rank: '13', Team: 'Многочлены', Matches: '8', 'Place Pts': '10', Kills: '10', 'Total Points': '20' },
-                    { Rank: '14', Team: 'Epstein Team', Matches: '8', 'Place Pts': '8', Kills: '9', 'Total Points': '17' },
-                    { Rank: '15', Team: 'PUBurGers', Matches: '8', 'Place Pts': '6', Kills: '8', 'Total Points': '14' },
-                    { Rank: '16', Team: 'Суслики', Matches: '8', 'Place Pts': '4', Kills: '7', 'Total Points': '11' }
-                ];
-            }
-            return [];
         }
 
         // Парсер CSV
@@ -494,16 +462,23 @@
                 return;
             }
             
+            // Сортируем по рангу
+            data.sort((a, b) => {
+                const rankA = parseFloat(a['Rank']) || 999;
+                const rankB = parseFloat(b['Rank']) || 999;
+                return rankA - rankB;
+            });
+            
             let html = '<table><thead><tr>';
             html += '<th>Ранг</th><th>Команда</th><th>Матчи</th><th>Очки за места</th><th>Киллы</th><th>Всего очков</th>';
             html += '</tr></thead><tbody>';
             
-            data.sort((a, b) => (parseInt(a['Rank']) || 0) - (parseInt(b['Rank']) || 0));
-            
             data.forEach((row, index) => {
+                const rank = parseFloat(row['Rank']) || index + 1;
                 const rankClass = index < 3 ? ` rank-${index + 1}` : '';
+                
                 html += `<tr class="${rankClass}">`;
-                html += `<td><strong>${row['Rank'] || index + 1}</strong></td>`;
+                html += `<td><strong>#${rank}</strong></td>`;
                 html += `<td>${row['Team'] || '-'}</td>`;
                 html += `<td>${row['Matches'] || '0'}</td>`;
                 html += `<td>${row['Place Pts'] || '0'}</td>`;
@@ -513,84 +488,6 @@
             });
             
             html += '</tbody></table>';
-            
-            document.getElementById('teams-count').textContent = data.length;
-            
-            containerEl.innerHTML = html;
-            loadingEl.style.display = 'none';
-            containerEl.style.display = 'block';
-            updateLastUpdateTime();
-        }
-
-        // Загрузка статистики команд
-        async function loadTeamsStats() {
-            const loadingEl = document.getElementById('teams-loading');
-            const containerEl = document.getElementById('teams-container');
-            
-            loadingEl.style.display = 'block';
-            containerEl.style.display = 'none';
-            
-            let html = '<div class="team-stats">';
-            
-            TEAMS_DATA.forEach(team => {
-                html += '<div class="stat-card">';
-                html += `<h3>${team.name}</h3>`;
-                
-                html += '<div class="players-list">';
-                html += '<strong>Игроки:</strong> ';
-                html += team.players.join(', ');
-                html += '</div>';
-                
-                // Здесь можно добавить статистику из таблицы, когда она будет заполнена
-                html += '<div class="stat-row"><span class="stat-label">Матчи:</span><span class="stat-value">8</span></div>';
-                html += '<div class="stat-row"><span class="stat-label">Всего очков:</span><span class="stat-value">-</span></div>';
-                html += '<div class="stat-row"><span class="stat-label">WWCD:</span><span class="stat-value">-</span></div>';
-                html += '<div class="stat-row"><span class="stat-label">Киллы:</span><span class="stat-value">-</span></div>';
-                html += '<div class="stat-row"><span class="stat-label">Ассисты:</span><span class="stat-value">-</span></div>';
-                
-                html += '</div>';
-            });
-            
-            html += '</div>';
-            
-            updateTeamFilter();
-            
-            containerEl.innerHTML = html;
-            loadingEl.style.display = 'none';
-            containerEl.style.display = 'block';
-            updateLastUpdateTime();
-        }
-
-        // Загрузка статистики игроков
-        async function loadPlayersStats() {
-            const loadingEl = document.getElementById('players-loading');
-            const containerEl = document.getElementById('players-table-container');
-            
-            loadingEl.style.display = 'block';
-            containerEl.style.display = 'none';
-            
-            let html = '<table><thead><tr>';
-            html += '<th>Игрок</th><th>Команда</th><th>Матчи</th><th>Киллы</th><th>Ассисты</th><th>KDA</th><th>Нокауты</th><th>Урон</th>';
-            html += '</tr></thead><tbody>';
-            
-            TEAMS_DATA.forEach(team => {
-                team.players.forEach(player => {
-                    html += '<tr>';
-                    html += `<td><strong>${player}</strong></td>`;
-                    html += `<td>${team.name}</td>`;
-                    html += `<td>8</td>`;
-                    html += `<td>-</td>`;
-                    html += `<td>-</td>`;
-                    html += `<td>-</td>`;
-                    html += `<td>-</td>`;
-                    html += `<td>-</td>`;
-                    html += '</tr>';
-                });
-            });
-            
-            html += '</tbody></table>';
-            
-            updatePlayerFilter();
             
             containerEl.innerHTML = html;
             loadingEl.style.display = 'none';
@@ -606,32 +503,116 @@
             loadingEl.style.display = 'block';
             containerEl.style.display = 'none';
             
-            const days = ['14 Марта', '15 Марта', '21 Марта', '22 Марта'];
-            const cards = ['Эрангель', 'Эрангель', 'Таэго', 'Мирамар', 'Мирамар'];
+            const data = await fetchSheetData(CONFIG.SHEETS.DAYS);
             
-            let html = '<div style="overflow-x: auto;">';
+            if (data.length === 0) {
+                loadingEl.style.display = 'none';
+                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Нет данных для отображения</p>';
+                containerEl.style.display = 'block';
+                return;
+            }
             
-            days.forEach((day, dayIndex) => {
-                html += `<h3 style="color: #f7b731; margin: 20px 0 10px 0;">${day}</h3>`;
+            // Группируем данные по дням
+            const days = [];
+            let currentDay = null;
+            
+            data.forEach(row => {
+                if (row['Номер №'] && row['Название команды']) {
+                    if (!currentDay || currentDay.length >= 16) {
+                        currentDay = [];
+                        days.push(currentDay);
+                    }
+                    currentDay.push(row);
+                }
+            });
+            
+            let html = '';
+            
+            days.forEach((dayData, dayIndex) => {
+                const dayDate = dayData[0]?.['Дата и время (МСК):'] || `День ${dayIndex + 1}`;
+                
+                html += `<h2>${dayDate}</h2>`;
                 html += '<table><thead><tr>';
-                html += '<th>Карта</th><th>Команда</th><th>Место</th><th>Киллы</th><th>Очки за место</th><th>Итого</th>';
+                html += '<th>Команда</th><th>Очки за места</th><th>Киллы</th><th>Итого</th>';
                 html += '</tr></thead><tbody>';
                 
-                // По 5 карт на каждый день
-                for (let i = 0; i < cards.length; i++) {
-                    TEAMS_DATA.slice(0, 3).forEach(team => {
+                dayData.forEach(row => {
+                    if (row['Название команды']) {
                         html += '<tr>';
-                        html += `<td>${cards[i]}</td>`;
-                        html += `<td>${team.name}</td>`;
-                        html += `<td>-</td>`;
-                        html += `<td>-</td>`;
-                        html += `<td>-</td>`;
-                        html += `<td>-</td>`;
+                        html += `<td>${row['Название команды']}</td>`;
+                        html += `<td>${row['Очки за места'] || '0'}</td>`;
+                        html += `<td>${row['Киллы'] || '0'}</td>`;
+                        html += `<td>${row['Итого'] || '0'}</td>`;
                         html += '</tr>';
-                    });
-                }
+                    }
+                });
                 
                 html += '</tbody></table>';
+                if (dayIndex < days.length - 1) html += '<br>';
+            });
+            
+            containerEl.innerHTML = html;
+            loadingEl.style.display = 'none';
+            containerEl.style.display = 'block';
+            updateLastUpdateTime();
+        }
+
+        // Загрузка статистики команд
+        async function loadTeamsStats() {
+            const loadingEl = document.getElementById('teams-loading');
+            const containerEl = document.getElementById('teams-container');
+            
+            loadingEl.style.display = 'block';
+            containerEl.style.display = 'none';
+            
+            const data = await fetchSheetData(CONFIG.SHEETS.TEAMS);
+            
+            if (data.length === 0) {
+                loadingEl.style.display = 'none';
+                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Нет данных для отображения</p>';
+                containerEl.style.display = 'block';
+                return;
+            }
+            
+            let html = '<div class="team-stats">';
+            
+            data.forEach(row => {
+                if (!row['Team']) return;
+                
+                html += '<div class="stat-card">';
+                html += `<h3>${row['Team']}</h3>`;
+                
+                // Добавляем список игроков
+                if (row['Players']) {
+                    html += `<div class="players-list"><span>Состав:</span> ${row['Players']}</div>`;
+                }
+                
+                const stats = [
+                    {label: 'Матчи', value: row['Number Of Matches']},
+                    {label: 'Всего очков', value: row['Total Points']},
+                    {label: 'WWCD (победы)', value: row['WWCD']},
+                    {label: 'Очки за места', value: row['Place Pts']},
+                    {label: 'Киллы', value: row['Kills']},
+                    {label: 'Ассисты', value: row['Assists']},
+                    {label: 'Урон', value: row['Damage Dealt']},
+                    {label: 'Получено урона', value: row['Damage Taken']},
+                    {label: 'Нокауты', value: row['Knocks']},
+                    {label: 'Реанимации', value: row['Revives']},
+                    {label: 'Хедшоты', value: row['Headshot Kills']},
+                    {label: 'Хилы', value: row['Heals']},
+                    {label: 'Бусты', value: row['Boosts']},
+                    {label: 'Время выживания', value: row['Time Survived']},
+                    {label: 'Дистанция (ходьба)', value: row['Walk Distance (km)'] ? row['Walk Distance (km)'] + ' км' : ''},
+                    {label: 'Дистанция (транспорт)', value: row['Ride Distance (km)'] ? row['Ride Distance (km)'] + ' км' : ''}
+                ];
+                
+                stats.forEach(stat => {
+                    if (stat.value && stat.value !== '0' && stat.value !== '') {
+                        html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
+                    }
+                });
+                
+                html += '</div>';
             });
             
             html += '</div>';
@@ -642,51 +623,84 @@
             updateLastUpdateTime();
         }
 
-        // Обновить фильтр команд
-        function updateTeamFilter() {
-            const teamSelect = document.getElementById('teamFilter');
-            while (teamSelect.options.length > 1) {
-                teamSelect.remove(1);
+        // Загрузка статистики игроков
+        async function loadPlayersStats() {
+            const loadingEl = document.getElementById('players-loading');
+            const containerEl = document.getElementById('players-container');
+            
+            loadingEl.style.display = 'block';
+            containerEl.style.display = 'none';
+            
+            const data = await fetchSheetData(CONFIG.SHEETS.PLAYERS);
+            
+            if (data.length === 0) {
+                loadingEl.style.display = 'none';
+                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Нет данных для отображения</p>';
+                containerEl.style.display = 'block';
+                return;
             }
             
-            TEAMS_DATA.forEach(team => {
-                const option = document.createElement('option');
-                option.value = team.name;
-                option.textContent = team.name;
-                teamSelect.appendChild(option);
-            });
-        }
-
-        // Обновить фильтр игроков
-        function updatePlayerFilter() {
-            const playerSelect = document.getElementById('playerFilter');
-            while (playerSelect.options.length > 1) {
-                playerSelect.remove(1);
-            }
+            let html = '<table><thead><tr>';
+            html += '<th>Игрок</th><th>Команда</th><th>Матчи</th><th>Киллы</th><th>Смерти</th><th>Ассисты</th><th>KDA</th><th>KD</th><th>Нокауты</th><th>Урон</th><th>Реанимации</th><th>Хедшоты</th><th>Longest Kill</th>';
+            html += '</tr></thead><tbody>';
             
-            TEAMS_DATA.forEach(team => {
-                team.players.forEach(player => {
-                    const option = document.createElement('option');
-                    option.value = player;
-                    option.textContent = player;
-                    playerSelect.appendChild(option);
-                });
+            data.forEach(row => {
+                if (!row['Player'] || row['Player'] === 'Player') return;
+                
+                const kills = parseFloat(row['Kills']) || 0;
+                const deaths = parseFloat(row['Death']) || 1;
+                const assists = parseFloat(row['Assists']) || 0;
+                
+                const kda = ((kills + assists) / deaths).toFixed(2);
+                const kd = (kills / deaths).toFixed(2);
+                
+                html += '<tr>';
+                html += `<td><strong>${row['Player']}</strong></td>`;
+                html += `<td>${row['Team'] || '-'}</td>`;
+                html += `<td>${row['Number of Matches'] || '0'}</td>`;
+                html += `<td>${kills}</td>`;
+                html += `<td>${row['Death'] || '0'}</td>`;
+                html += `<td>${assists}</td>`;
+                html += `<td>${kda}</td>`;
+                html += `<td>${kd}</td>`;
+                html += `<td>${row['Knocks'] || '0'}</td>`;
+                html += `<td>${row['Damage Dealt'] || '0'}</td>`;
+                html += `<td>${row['Revives'] || '0'}</td>`;
+                html += `<td>${row['Headshot Kills'] || '0'}</td>`;
+                html += `<td>${row['Longest Kill (m)'] || '0'}м</td>`;
+                html += '</tr>';
             });
+            
+            html += '</tbody></table>';
+            
+            containerEl.innerHTML = html;
+            loadingEl.style.display = 'none';
+            containerEl.style.display = 'block';
+            updateLastUpdateTime();
         }
 
         // Переключение вкладок
         function switchTab(tabName, event) {
-            console.log('Переключение на вкладку:', tabName);
-            
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
             
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.getElementById(`${tabName}-tab`).classList.add('active');
             
+            // Показываем/скрываем фильтры в зависимости от вкладки
+            const filtersContainer = document.getElementById('filters-container');
+            if (tabName === 'players' || tabName === 'teams') {
+                filtersContainer.style.display = 'flex';
+            } else {
+                filtersContainer.style.display = 'none';
+            }
+            
             switch(tabName) {
                 case 'main':
                     loadMainTable();
+                    break;
+                case 'days':
+                    loadDaysTable();
                     break;
                 case 'teams':
                     loadTeamsStats();
@@ -694,29 +708,23 @@
                 case 'players':
                     loadPlayersStats();
                     break;
-                case 'days':
-                    loadDaysTable();
-                    break;
             }
         }
 
-        // Фильтры
+        // Фильтры (пока заглушки)
         function filterByTeam() {
-            const team = document.getElementById('teamFilter').value;
-            console.log('Фильтр по команде:', team);
-            // Здесь будет логика фильтрации
+            console.log('Фильтр по команде:', document.getElementById('teamFilter').value);
         }
 
         function filterByPlayer() {
-            const player = document.getElementById('playerFilter').value;
-            console.log('Фильтр по игроку:', player);
-            // Здесь будет логика фильтрации
+            console.log('Фильтр по игроку:', document.getElementById('playerFilter').value);
         }
 
         // Инициализация при загрузке страницы
         window.onload = async function() {
             console.log('Страница загружена');
             await loadMainTable();
+            await loadDaysTable();
             await loadTeamsStats();
             await loadPlayersStats();
         };
