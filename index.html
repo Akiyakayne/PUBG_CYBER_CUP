@@ -417,14 +417,13 @@
             }
         };
 
-        // Функция для нормализации названий команд (убираем различия в апострофах)
+        // Функция для нормализации названий команд
         function normalizeTeamName(name) {
             if (!name) return '';
-            // Заменяем разные типы апострофов на стандартный
             return name.replace(/['`´’]/g, "'").trim();
         }
 
-        // Улучшенный парсер CSV
+        // Основной парсер CSV (с обработкой кавычек)
         function parseCSV(csvText) {
             if (!csvText || csvText.trim() === '') return [];
             
@@ -439,7 +438,6 @@
                 if (char === '"' && !inQuotes) {
                     inQuotes = true;
                 } else if (char === '"' && inQuotes && csvText[i + 1] === '"') {
-                    // Экранированные кавычки
                     currentField += '"';
                     i++;
                 } else if (char === '"' && inQuotes) {
@@ -464,6 +462,7 @@
             
             if (lines.length === 0) return [];
             
+            // Заголовки - первая строка
             const headers = lines[0].map(h => h.replace(/"/g, '').trim());
             const data = [];
             
@@ -483,6 +482,65 @@
             return data;
         }
 
+        // Альтернативный парсер для случая, когда первая строка не является заголовками
+        function parseCSVAlternative(csvText) {
+            if (!csvText || csvText.trim() === '') return [];
+            
+            const lines = [];
+            let currentLine = [];
+            let currentField = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < csvText.length; i++) {
+                const char = csvText[i];
+                if (char === '"' && !inQuotes) {
+                    inQuotes = true;
+                } else if (char === '"' && inQuotes && csvText[i + 1] === '"') {
+                    currentField += '"';
+                    i++;
+                } else if (char === '"' && inQuotes) {
+                    inQuotes = false;
+                } else if (char === ',' && !inQuotes) {
+                    currentLine.push(currentField);
+                    currentField = '';
+                } else if (char === '\n' && !inQuotes) {
+                    currentLine.push(currentField);
+                    lines.push(currentLine);
+                    currentLine = [];
+                    currentField = '';
+                } else {
+                    currentField += char;
+                }
+            }
+            if (currentField || currentLine.length > 0) {
+                currentLine.push(currentField);
+                lines.push(currentLine);
+            }
+            
+            if (lines.length === 0) return [];
+            
+            // Используем предопределённые заголовки для листа PLAYERS (из Excel)
+            const expectedHeaders = [
+                'Player', 'Team', 'Number of Matches', 'Kills', 'Death', 'Assists', 'KDA', 'KD', 'KAS',
+                'Knocks', 'Kills/Knocks', 'Damage Dealt', 'Revives', 'Headshot Kills', 'Longest Kill (m)',
+                'Swimming Distance (km)', 'Walk Distance (km)', 'Ride Distance (km)', 'Time Survived'
+            ];
+            
+            const data = [];
+            // Пропускаем первую строку, если она пустая или содержит мусор (по факту первая строка уже содержит данные)
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (line.length === 0 || line.every(f => f.trim() === '')) continue;
+                
+                const row = {};
+                expectedHeaders.forEach((header, index) => {
+                    row[header] = line[index] ? line[index].replace(/^"|"$/g, '').trim() : '';
+                });
+                data.push(row);
+            }
+            return data;
+        }
+
         // Функция для получения данных из Google Sheets
         async function fetchSheetData(sheetName) {
             try {
@@ -494,7 +552,18 @@
                 }
                 
                 const csvText = await response.text();
-                return parseCSV(csvText);
+                console.log(`📄 Сырой CSV (первые 500 символов) для листа ${sheetName}:`, csvText.substring(0, 500));
+                
+                // Пробуем стандартный парсер
+                let data = parseCSV(csvText);
+                
+                // Если ключи выглядят подозрительно (содержат пробелы и значения), используем альтернативный
+                if (data.length > 0 && Object.keys(data[0]).some(key => key.includes(' '))) {
+                    console.warn('⚠️ Обнаружены подозрительные ключи, пробуем альтернативный парсинг...');
+                    data = parseCSVAlternative(csvText);
+                }
+                
+                return data;
                 
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
@@ -533,7 +602,6 @@
                 return;
             }
             
-            // Сортируем по рангу
             data.sort((a, b) => {
                 const rankA = parseFloat(a['Rank']) || 999;
                 const rankB = parseFloat(b['Rank']) || 999;
@@ -566,7 +634,7 @@
             updateLastUpdateTime();
         }
 
-        // Загрузка статистики команд - обновлено под новую структуру
+        // Загрузка статистики команд
         async function loadTeamsStats() {
             const loadingEl = document.getElementById('teams-loading');
             const containerEl = document.getElementById('teams-container');
@@ -574,7 +642,6 @@
             loadingEl.style.display = 'block';
             containerEl.style.display = 'none';
             
-            // Загружаем данные из обоих листов
             const [teamsData, playersData] = await Promise.all([
                 fetchSheetData(CONFIG.SHEETS.TEAMS),
                 fetchSheetData(CONFIG.SHEETS.PLAYERS)
@@ -587,7 +654,7 @@
                 return;
             }
             
-            // Группируем игроков по командам с нормализацией названий
+            // Группируем игроков по командам
             const teamPlayers = {};
             playersData.forEach(row => {
                 if (row['Player'] && row['Team'] && row['Player'] !== 'Player') {
@@ -599,17 +666,9 @@
                 }
             });
             
-            // Создаем мапу для быстрого поиска состава по нормализованному названию
-            const teamPlayersMap = {};
-            Object.keys(teamPlayers).forEach(key => {
-                teamPlayersMap[key] = teamPlayers[key];
-            });
-            
             let html = '<div class="team-stats">';
             
-            // Проходим по каждой команде из таблицы команд
             teamsData.forEach(row => {
-                // Проверяем, что это строка с командой
                 if (!row['Team'] || row['Team'] === 'Team' || row['Team'].trim() === '') return;
                 
                 const teamName = row['Team'];
@@ -618,46 +677,24 @@
                 html += '<div class="stat-card">';
                 html += `<h3>🏆 ${teamName}</h3>`;
                 
-                // Добавляем список игроков из сгруппированных данных
-                if (teamPlayersMap[normalizedTeamName] && teamPlayersMap[normalizedTeamName].length > 0) {
+                if (teamPlayers[normalizedTeamName] && teamPlayers[normalizedTeamName].length > 0) {
                     html += '<div class="players-list">';
                     html += '<div class="players-list-title">👥 Состав команды</div>';
                     html += '<div class="players-grid">';
-                    
-                    teamPlayersMap[normalizedTeamName].forEach(player => {
+                    teamPlayers[normalizedTeamName].forEach(player => {
                         html += `<div class="player-item">🎮 ${player}</div>`;
                     });
-                    
                     html += '</div></div>';
-                } else {
-                    // Если в таблице игроков нет состава, пробуем взять из поля Players (на всякий случай)
-                    if (row['Players'] && row['Players'].trim() !== '') {
-                        const players = row['Players'].split(',').map(p => p.trim()).filter(p => p !== '');
-                        if (players.length > 0) {
-                            html += '<div class="players-list">';
-                            html += '<div class="players-list-title">👥 Состав команды (из таблицы команд)</div>';
-                            html += '<div class="players-grid">';
-                            
-                            players.forEach(player => {
-                                html += `<div class="player-item">🎮 ${player}</div>`;
-                            });
-                            
-                            html += '</div></div>';
-                        }
-                    }
                 }
                 
-                // Основная статистика
                 html += '<div class="stat-section">';
                 html += '<div class="stat-section-title">📊 Основная статистика</div>';
-                
                 const mainStats = [
                     {label: 'Матчи', value: row['Number Of Matches']},
                     {label: 'WWCD (победы)', value: row['WWCD']},
                     {label: 'Киллы', value: row['Kills']},
                     {label: 'Ассисты', value: row['Assists']}
                 ];
-                
                 mainStats.forEach(stat => {
                     if (stat.value && stat.value !== '0' && stat.value !== '') {
                         html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
@@ -665,10 +702,8 @@
                 });
                 html += '</div>';
                 
-                // Боевая статистика
                 html += '<div class="stat-section">';
                 html += '<div class="stat-section-title">⚔️ Боевая статистика</div>';
-                
                 const combatStats = [
                     {label: 'Урон нанесенный', value: row['Damage Dealt']},
                     {label: 'Нокауты', value: row['Knocks']},
@@ -676,7 +711,6 @@
                     {label: 'Хедшоты', value: row['Headshot Kills']},
                     {label: 'Уничтожено транспорта', value: row['Vehicle Destroys']}
                 ];
-                
                 combatStats.forEach(stat => {
                     if (stat.value && stat.value !== '0' && stat.value !== '') {
                         html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
@@ -684,15 +718,12 @@
                 });
                 html += '</div>';
                 
-                // Медицина и поддержка
                 html += '<div class="stat-section">';
                 html += '<div class="stat-section-title">💊 Медицина</div>';
-                
                 const medicStats = [
                     {label: 'Аптечки', value: row['Heals']},
                     {label: 'Бусты', value: row['Boosts']}
                 ];
-                
                 medicStats.forEach(stat => {
                     if (stat.value && stat.value !== '0' && stat.value !== '') {
                         html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
@@ -700,17 +731,14 @@
                 });
                 html += '</div>';
                 
-                // Перемещение
                 html += '<div class="stat-section">';
                 html += '<div class="stat-section-title">🏃 Перемещение</div>';
-                
                 const movementStats = [
                     {label: 'Время выживания', value: row['Time Survived']},
                     {label: 'Дистанция (плавание)', value: row['Swimming Distance (km)'] ? row['Swimming Distance (km)'] + ' км' : ''},
                     {label: 'Дистанция (пешком)', value: row['Walk Distance (km)'] ? row['Walk Distance (km)'] + ' км' : ''},
                     {label: 'Дистанция (транспорт)', value: row['Ride Distance (km)'] ? row['Ride Distance (km)'] + ' км' : ''}
                 ];
-                
                 movementStats.forEach(stat => {
                     if (stat.value && stat.value !== '0' && stat.value !== '') {
                         html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
@@ -729,136 +757,116 @@
             updateLastUpdateTime();
         }
 
-        // Загрузка статистики игроков - обновлено под новую структуру
-    async function loadPlayersStats() {
-        const loadingEl = document.getElementById('players-loading');
-        const containerEl = document.getElementById('players-container');
-        
-        loadingEl.style.display = 'block';
-        containerEl.style.display = 'none';
-        
-        console.log('🚀 Начинаем загрузку статистики игроков...');
-        
-        const data = await fetchSheetData(CONFIG.SHEETS.PLAYERS);
-        
-        console.log('📊 ПОЛУЧЕННЫЕ ДАННЫЕ (первые 10 строк):', data.slice(0, 10));
-        console.log('📊 ВСЕГО СТРОК:', data.length);
-        
-        if (data.length === 0) {
-            console.error('❌ Данные не загрузились! Проверьте:');
-            console.error('1. Название листа в CONFIG.SHEETS.PLAYERS должно точно совпадать с именем в Google Sheets (регистр, пробелы)');
-            console.error('2. Доступ к таблице: она должна быть опубликована или доступна по ссылке');
-            console.error('3. Сетевая ошибка – возможно, CORS или блокировка');
+        // Загрузка статистики игроков
+        async function loadPlayersStats() {
+            const loadingEl = document.getElementById('players-loading');
+            const containerEl = document.getElementById('players-container');
             
-            loadingEl.style.display = 'none';
-            containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Ошибка загрузки данных. Проверьте консоль (F12).</p>';
-            containerEl.style.display = 'block';
-            return;
-        }
-        
-        // Анализируем заголовки (ключи) первой строки
-        if (data.length > 0) {
-            console.log('🔑 ЗАГОЛОВКИ (ключи) первой строки:', Object.keys(data[0]));
+            loadingEl.style.display = 'block';
+            containerEl.style.display = 'none';
             
-            // Проверим, есть ли среди заголовков нужные нам поля
-            const requiredFields = ['Player', 'Team', 'Kills', 'Death', 'Assists'];
-            const missingFields = requiredFields.filter(f => !Object.keys(data[0]).includes(f));
-            if (missingFields.length > 0) {
-                console.warn('⚠️ Отсутствуют ожидаемые поля:', missingFields);
-            } else {
-                console.log('✅ Все основные поля присутствуют.');
+            console.log('🚀 Начинаем загрузку статистики игроков...');
+            
+            const data = await fetchSheetData(CONFIG.SHEETS.PLAYERS);
+            
+            console.log('📊 ПОЛУЧЕННЫЕ ДАННЫЕ (первые 10 строк):', data.slice(0, 10));
+            console.log('📊 ВСЕГО СТРОК:', data.length);
+            
+            if (data.length === 0) {
+                console.error('❌ Данные не загрузились!');
+                loadingEl.style.display = 'none';
+                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Ошибка загрузки данных. Проверьте консоль (F12).</p>';
+                containerEl.style.display = 'block';
+                return;
             }
-        }
-        
-        // Покажем содержимое первой строки (если есть)
-        if (data.length > 0) {
-            console.log('📄 ПЕРВАЯ СТРОКА ДАННЫХ:', data[0]);
-        }
-        
-        // Попробуем найти строки с непустым Player
-        const validPlayers = data.filter(row => {
-            const playerName = row['Player'];
-            return playerName && playerName !== 'Player' && playerName.trim() !== '';
-        });
-        
-        console.log('👥 Количество валидных игроков (после фильтра):', validPlayers.length);
-        
-        if (validPlayers.length === 0) {
-            console.warn('❌ Нет валидных игроков. Возможно, поле называется иначе.');
-            // Попробуем найти любой ключ, похожий на имя игрока
+            
+            // Анализируем заголовки
             if (data.length > 0) {
-                const possibleKeys = Object.keys(data[0]);
-                const nameKey = possibleKeys.find(k => k.toLowerCase().includes('player') || k.toLowerCase().includes('игрок'));
-                if (nameKey) {
-                    console.log(`🔎 Возможно, поле с именем называется "${nameKey}"`);
-                    // Проверим, есть ли в этом поле непустые значения
-                    const sampleValues = data.slice(1, 5).map(row => row[nameKey]).filter(v => v);
-                    console.log('Примеры значений из этого поля:', sampleValues);
+                console.log('🔑 ЗАГОЛОВКИ (ключи) первой строки:', Object.keys(data[0]));
+                
+                const requiredFields = ['Player', 'Team', 'Kills', 'Death', 'Assists'];
+                const missingFields = requiredFields.filter(f => !Object.keys(data[0]).includes(f));
+                if (missingFields.length > 0) {
+                    console.warn('⚠️ Отсутствуют ожидаемые поля:', missingFields);
+                } else {
+                    console.log('✅ Все основные поля присутствуют.');
                 }
             }
             
+            // Покажем содержимое первой строки
+            if (data.length > 0) {
+                console.log('📄 ПЕРВАЯ СТРОКА ДАННЫХ:', data[0]);
+            }
+            
+            // Фильтруем строки с непустым Player
+            const validPlayers = data.filter(row => {
+                const playerName = row['Player'];
+                return playerName && playerName !== 'Player' && playerName.trim() !== '';
+            });
+            
+            console.log('👥 Количество валидных игроков (после фильтра):', validPlayers.length);
+            
+            if (validPlayers.length === 0) {
+                console.warn('❌ Нет валидных игроков.');
+                loadingEl.style.display = 'none';
+                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Нет данных об игроках. Подробности в консоли.</p>';
+                containerEl.style.display = 'block';
+                return;
+            }
+            
+            // Строим таблицу
+            let html = '<table><thead><tr>';
+            html += '<th>Игрок</th><th>Команда</th><th>Матчи</th><th>K/D</th><th>KDA</th><th>KAS</th><th>Киллы</th><th>Смерти</th><th>Ассисты</th><th>Нокауты</th><th>Урон</th><th>Реанимации</th><th>Хедшоты</th><th>Longest Kill</th><th>Время выживания</th>';
+            html += '</tr></thead><tbody>';
+            
+            validPlayers.forEach(row => {
+                const kills = parseFloat(String(row['Kills'] || '0').replace(',', '.')) || 0;
+                const deaths = parseFloat(String(row['Death'] || '1').replace(',', '.')) || 1;
+                const assists = parseFloat(String(row['Assists'] || '0').replace(',', '.')) || 0;
+                const matches = parseFloat(String(row['Number of Matches'] || '0').replace(',', '.')) || 0;
+                const knocks = parseFloat(String(row['Knocks'] || '0').replace(',', '.')) || 0;
+                const damage = parseFloat(String(row['Damage Dealt'] || '0').replace(',', '.')) || 0;
+                const revives = parseFloat(String(row['Revives'] || '0').replace(',', '.')) || 0;
+                const headshots = parseFloat(String(row['Headshot Kills'] || '0').replace(',', '.')) || 0;
+                const longestKill = parseFloat(String(row['Longest Kill (m)'] || '0').replace(',', '.')) || 0;
+                const timeSurvived = parseFloat(String(row['Time Survived'] || '0').replace(',', '.')) || 0;
+                
+                let kd = row['KD'] ? parseFloat(String(row['KD']).replace(',', '.')) : (deaths > 0 ? (kills / deaths) : kills);
+                let kda = row['KDA'] ? parseFloat(String(row['KDA']).replace(',', '.')) : (deaths > 0 ? ((kills + assists) / deaths) : (kills + assists));
+                let kas = row['KAS'] ? parseFloat(String(row['KAS']).replace(',', '.')) : 0;
+                
+                kd = kd.toFixed(2);
+                kda = kda.toFixed(2);
+                if (kas) kas = kas.toFixed(2);
+                
+                html += '<tr>';
+                html += `<td><strong>${row['Player']}</strong></td>`;
+                html += `<td>${row['Team'] || '-'}</td>`;
+                html += `<td>${matches}</td>`;
+                html += `<td>${kd}</td>`;
+                html += `<td>${kda}</td>`;
+                html += `<td>${kas}</td>`;
+                html += `<td>${kills}</td>`;
+                html += `<td>${deaths}</td>`;
+                html += `<td>${assists}</td>`;
+                html += `<td>${knocks}</td>`;
+                html += `<td>${damage}</td>`;
+                html += `<td>${revives}</td>`;
+                html += `<td>${headshots}</td>`;
+                html += `<td>${longestKill}м</td>`;
+                html += `<td>${timeSurvived}</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            
+            containerEl.innerHTML = html;
             loadingEl.style.display = 'none';
-            containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Нет данных об игроках. Подробности в консоли.</p>';
             containerEl.style.display = 'block';
-            return;
+            updateLastUpdateTime();
+            
+            console.log('✅ Таблица игроков успешно отрисована.');
         }
-        
-        // Если всё хорошо, строим таблицу
-        let html = '<table><thead><tr>';
-        html += '<th>Игрок</th><th>Команда</th><th>Матчи</th><th>K/D</th><th>KDA</th><th>KAS</th><th>Киллы</th><th>Смерти</th><th>Ассисты</th><th>Нокауты</th><th>Урон</th><th>Реанимации</th><th>Хедшоты</th><th>Longest Kill</th><th>Время выживания</th>';
-        html += '</tr></thead><tbody>';
-        
-        validPlayers.forEach(row => {
-            // Парсим числовые значения, заменяя запятую на точку, если нужно
-            const kills = parseFloat(String(row['Kills'] || '0').replace(',', '.')) || 0;
-            const deaths = parseFloat(String(row['Death'] || '1').replace(',', '.')) || 1;
-            const assists = parseFloat(String(row['Assists'] || '0').replace(',', '.')) || 0;
-            const matches = parseFloat(String(row['Number of Matches'] || '0').replace(',', '.')) || 0;
-            const knocks = parseFloat(String(row['Knocks'] || '0').replace(',', '.')) || 0;
-            const damage = parseFloat(String(row['Damage Dealt'] || '0').replace(',', '.')) || 0;
-            const revives = parseFloat(String(row['Revives'] || '0').replace(',', '.')) || 0;
-            const headshots = parseFloat(String(row['Headshot Kills'] || '0').replace(',', '.')) || 0;
-            const longestKill = parseFloat(String(row['Longest Kill (m)'] || '0').replace(',', '.')) || 0;
-            const timeSurvived = parseFloat(String(row['Time Survived'] || '0').replace(',', '.')) || 0;
-            
-            // Используем готовые KDA, KD, KAS, если они есть, иначе вычисляем
-            let kd = row['KD'] ? parseFloat(String(row['KD']).replace(',', '.')) : (deaths > 0 ? (kills / deaths) : kills);
-            let kda = row['KDA'] ? parseFloat(String(row['KDA']).replace(',', '.')) : (deaths > 0 ? ((kills + assists) / deaths) : (kills + assists));
-            let kas = row['KAS'] ? parseFloat(String(row['KAS']).replace(',', '.')) : 0;
-            
-            // Форматируем до двух знаков
-            kd = kd.toFixed(2);
-            kda = kda.toFixed(2);
-            if (kas) kas = kas.toFixed(2);
-            
-            html += '<tr>';
-            html += `<td><strong>${row['Player']}</strong></td>`;
-            html += `<td>${row['Team'] || '-'}</td>`;
-            html += `<td>${matches}</td>`;
-            html += `<td>${kd}</td>`;
-            html += `<td>${kda}</td>`;
-            html += `<td>${kas}</td>`;
-            html += `<td>${kills}</td>`;
-            html += `<td>${deaths}</td>`;
-            html += `<td>${assists}</td>`;
-            html += `<td>${knocks}</td>`;
-            html += `<td>${damage}</td>`;
-            html += `<td>${revives}</td>`;
-            html += `<td>${headshots}</td>`;
-            html += `<td>${longestKill}м</td>`;
-            html += `<td>${timeSurvived}</td>`;
-            html += '</tr>';
-        });
-        
-        html += '</tbody></table>';
-        
-        containerEl.innerHTML = html;
-        loadingEl.style.display = 'none';
-        containerEl.style.display = 'block';
-        updateLastUpdateTime();
-        
-        console.log('✅ Таблица игроков успешно отрисована.');
-    }
 
         // Переключение вкладок
         function switchTab(tabName, event) {
