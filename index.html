@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PUBG Турнирная таблица - Студенческий турнир</title>
     <style>
+        /* ... все стили без изменений ... */
         * {
             margin: 0;
             padding: 0;
@@ -373,7 +374,7 @@
                 </div>
                 <div class="info-item">
                     <div class="info-label">Карты</div>
-                    <div class="info-value">Эрангель  ➡️ Эрангель ➡️ Таэго ➡️ Мирамар ➡️ Мирамар </div>
+                    <div class="info-value">Эрангель, Таэго, Мирамар</div>
                 </div>
             </div>
         </div>
@@ -565,7 +566,7 @@
             updateLastUpdateTime();
         }
 
-        // Загрузка статистики команд
+        // Загрузка статистики команд - обновлено под новую структуру
         async function loadTeamsStats() {
             const loadingEl = document.getElementById('teams-loading');
             const containerEl = document.getElementById('teams-container');
@@ -629,7 +630,7 @@
                     
                     html += '</div></div>';
                 } else {
-                    // Если в таблице игроков нет состава, пробуем взять из поля Players
+                    // Если в таблице игроков нет состава, пробуем взять из поля Players (на всякий случай)
                     if (row['Players'] && row['Players'].trim() !== '') {
                         const players = row['Players'].split(',').map(p => p.trim()).filter(p => p !== '');
                         if (players.length > 0) {
@@ -652,7 +653,9 @@
                 
                 const mainStats = [
                     {label: 'Матчи', value: row['Number Of Matches']},
-                    {label: 'WWCD (победы)', value: row['WWCD']}
+                    {label: 'WWCD (победы)', value: row['WWCD']},
+                    {label: 'Киллы', value: row['Kills']},
+                    {label: 'Ассисты', value: row['Assists']}
                 ];
                 
                 mainStats.forEach(stat => {
@@ -667,15 +670,10 @@
                 html += '<div class="stat-section-title">⚔️ Боевая статистика</div>';
                 
                 const combatStats = [
-                    {label: 'Киллы', value: row['Kills']},
-                    {label: 'Ассисты', value: row['Assists']},
                     {label: 'Урон нанесенный', value: row['Damage Dealt']},
-                    {label: 'Урон полученный', value: row['Damage Taken']},
                     {label: 'Нокауты', value: row['Knocks']},
                     {label: 'Реанимации', value: row['Revives']},
                     {label: 'Хедшоты', value: row['Headshot Kills']},
-                    {label: 'Украденные убийства', value: row['Stolen Kills']},
-                    {label: 'Потерянные убийства', value: row['Lost Kills']},
                     {label: 'Уничтожено транспорта', value: row['Vehicle Destroys']}
                 ];
                 
@@ -692,7 +690,6 @@
                 
                 const medicStats = [
                     {label: 'Аптечки', value: row['Heals']},
-                    {label: 'Здоровье восстановлено', value: row['Health Recovered']},
                     {label: 'Бусты', value: row['Boosts']}
                 ];
                 
@@ -732,61 +729,136 @@
             updateLastUpdateTime();
         }
 
-        // Загрузка статистики игроков
-        async function loadPlayersStats() {
-            const loadingEl = document.getElementById('players-loading');
-            const containerEl = document.getElementById('players-container');
+        // Загрузка статистики игроков - обновлено под новую структуру
+    async function loadPlayersStats() {
+        const loadingEl = document.getElementById('players-loading');
+        const containerEl = document.getElementById('players-container');
+        
+        loadingEl.style.display = 'block';
+        containerEl.style.display = 'none';
+        
+        console.log('🚀 Начинаем загрузку статистики игроков...');
+        
+        const data = await fetchSheetData(CONFIG.SHEETS.PLAYERS);
+        
+        console.log('📊 ПОЛУЧЕННЫЕ ДАННЫЕ (первые 10 строк):', data.slice(0, 10));
+        console.log('📊 ВСЕГО СТРОК:', data.length);
+        
+        if (data.length === 0) {
+            console.error('❌ Данные не загрузились! Проверьте:');
+            console.error('1. Название листа в CONFIG.SHEETS.PLAYERS должно точно совпадать с именем в Google Sheets (регистр, пробелы)');
+            console.error('2. Доступ к таблице: она должна быть опубликована или доступна по ссылке');
+            console.error('3. Сетевая ошибка – возможно, CORS или блокировка');
             
-            loadingEl.style.display = 'block';
-            containerEl.style.display = 'none';
+            loadingEl.style.display = 'none';
+            containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Ошибка загрузки данных. Проверьте консоль (F12).</p>';
+            containerEl.style.display = 'block';
+            return;
+        }
+        
+        // Анализируем заголовки (ключи) первой строки
+        if (data.length > 0) {
+            console.log('🔑 ЗАГОЛОВКИ (ключи) первой строки:', Object.keys(data[0]));
             
-            const data = await fetchSheetData(CONFIG.SHEETS.PLAYERS);
-            
-            if (data.length === 0) {
-                loadingEl.style.display = 'none';
-                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Нет данных для отображения</p>';
-                containerEl.style.display = 'block';
-                return;
+            // Проверим, есть ли среди заголовков нужные нам поля
+            const requiredFields = ['Player', 'Team', 'Kills', 'Death', 'Assists'];
+            const missingFields = requiredFields.filter(f => !Object.keys(data[0]).includes(f));
+            if (missingFields.length > 0) {
+                console.warn('⚠️ Отсутствуют ожидаемые поля:', missingFields);
+            } else {
+                console.log('✅ Все основные поля присутствуют.');
+            }
+        }
+        
+        // Покажем содержимое первой строки (если есть)
+        if (data.length > 0) {
+            console.log('📄 ПЕРВАЯ СТРОКА ДАННЫХ:', data[0]);
+        }
+        
+        // Попробуем найти строки с непустым Player
+        const validPlayers = data.filter(row => {
+            const playerName = row['Player'];
+            return playerName && playerName !== 'Player' && playerName.trim() !== '';
+        });
+        
+        console.log('👥 Количество валидных игроков (после фильтра):', validPlayers.length);
+        
+        if (validPlayers.length === 0) {
+            console.warn('❌ Нет валидных игроков. Возможно, поле называется иначе.');
+            // Попробуем найти любой ключ, похожий на имя игрока
+            if (data.length > 0) {
+                const possibleKeys = Object.keys(data[0]);
+                const nameKey = possibleKeys.find(k => k.toLowerCase().includes('player') || k.toLowerCase().includes('игрок'));
+                if (nameKey) {
+                    console.log(`🔎 Возможно, поле с именем называется "${nameKey}"`);
+                    // Проверим, есть ли в этом поле непустые значения
+                    const sampleValues = data.slice(1, 5).map(row => row[nameKey]).filter(v => v);
+                    console.log('Примеры значений из этого поля:', sampleValues);
+                }
             }
             
-            let html = '<table><thead><tr>';
-            html += '<th>Игрок</th><th>Команда</th><th>Матчи</th><th>K/D</th><th>KDA</th><th>Киллы</th><th>Смерти</th><th>Ассисты</th><th>Нокауты</th><th>Урон</th><th>Реанимации</th><th>Хедшоты</th><th>Longest Kill</th>';
-            html += '</tr></thead><tbody>';
-            
-            data.forEach(row => {
-                if (!row['Player'] || row['Player'] === 'Player' || row['Player'].trim() === '') return;
-                
-                const kills = parseFloat(row['Kills']) || 0;
-                const deaths = parseFloat(row['Death']) || 1;
-                const assists = parseFloat(row['Assists']) || 0;
-                
-                const kd = (kills / deaths).toFixed(2);
-                const kda = ((kills + assists) / deaths).toFixed(2);
-                
-                html += '<tr>';
-                html += `<td><strong>${row['Player']}</strong></td>`;
-                html += `<td>${row['Team'] || '-'}</td>`;
-                html += `<td>${row['Number of Matches'] || '0'}</td>`;
-                html += `<td>${kd}</td>`;
-                html += `<td>${kda}</td>`;
-                html += `<td>${kills}</td>`;
-                html += `<td>${row['Death'] || '0'}</td>`;
-                html += `<td>${assists}</td>`;
-                html += `<td>${row['Knocks'] || '0'}</td>`;
-                html += `<td>${row['Damage Dealt'] || '0'}</td>`;
-                html += `<td>${row['Revives'] || '0'}</td>`;
-                html += `<td>${row['Headshot Kills'] || '0'}</td>`;
-                html += `<td>${row['Longest Kill (m)'] || '0'}м</td>`;
-                html += '</tr>';
-            });
-            
-            html += '</tbody></table>';
-            
-            containerEl.innerHTML = html;
             loadingEl.style.display = 'none';
+            containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Нет данных об игроках. Подробности в консоли.</p>';
             containerEl.style.display = 'block';
-            updateLastUpdateTime();
+            return;
         }
+        
+        // Если всё хорошо, строим таблицу
+        let html = '<table><thead><tr>';
+        html += '<th>Игрок</th><th>Команда</th><th>Матчи</th><th>K/D</th><th>KDA</th><th>KAS</th><th>Киллы</th><th>Смерти</th><th>Ассисты</th><th>Нокауты</th><th>Урон</th><th>Реанимации</th><th>Хедшоты</th><th>Longest Kill</th><th>Время выживания</th>';
+        html += '</tr></thead><tbody>';
+        
+        validPlayers.forEach(row => {
+            // Парсим числовые значения, заменяя запятую на точку, если нужно
+            const kills = parseFloat(String(row['Kills'] || '0').replace(',', '.')) || 0;
+            const deaths = parseFloat(String(row['Death'] || '1').replace(',', '.')) || 1;
+            const assists = parseFloat(String(row['Assists'] || '0').replace(',', '.')) || 0;
+            const matches = parseFloat(String(row['Number of Matches'] || '0').replace(',', '.')) || 0;
+            const knocks = parseFloat(String(row['Knocks'] || '0').replace(',', '.')) || 0;
+            const damage = parseFloat(String(row['Damage Dealt'] || '0').replace(',', '.')) || 0;
+            const revives = parseFloat(String(row['Revives'] || '0').replace(',', '.')) || 0;
+            const headshots = parseFloat(String(row['Headshot Kills'] || '0').replace(',', '.')) || 0;
+            const longestKill = parseFloat(String(row['Longest Kill (m)'] || '0').replace(',', '.')) || 0;
+            const timeSurvived = parseFloat(String(row['Time Survived'] || '0').replace(',', '.')) || 0;
+            
+            // Используем готовые KDA, KD, KAS, если они есть, иначе вычисляем
+            let kd = row['KD'] ? parseFloat(String(row['KD']).replace(',', '.')) : (deaths > 0 ? (kills / deaths) : kills);
+            let kda = row['KDA'] ? parseFloat(String(row['KDA']).replace(',', '.')) : (deaths > 0 ? ((kills + assists) / deaths) : (kills + assists));
+            let kas = row['KAS'] ? parseFloat(String(row['KAS']).replace(',', '.')) : 0;
+            
+            // Форматируем до двух знаков
+            kd = kd.toFixed(2);
+            kda = kda.toFixed(2);
+            if (kas) kas = kas.toFixed(2);
+            
+            html += '<tr>';
+            html += `<td><strong>${row['Player']}</strong></td>`;
+            html += `<td>${row['Team'] || '-'}</td>`;
+            html += `<td>${matches}</td>`;
+            html += `<td>${kd}</td>`;
+            html += `<td>${kda}</td>`;
+            html += `<td>${kas}</td>`;
+            html += `<td>${kills}</td>`;
+            html += `<td>${deaths}</td>`;
+            html += `<td>${assists}</td>`;
+            html += `<td>${knocks}</td>`;
+            html += `<td>${damage}</td>`;
+            html += `<td>${revives}</td>`;
+            html += `<td>${headshots}</td>`;
+            html += `<td>${longestKill}м</td>`;
+            html += `<td>${timeSurvived}</td>`;
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        
+        containerEl.innerHTML = html;
+        loadingEl.style.display = 'none';
+        containerEl.style.display = 'block';
+        updateLastUpdateTime();
+        
+        console.log('✅ Таблица игроков успешно отрисована.');
+    }
 
         // Переключение вкладок
         function switchTab(tabName, event) {
