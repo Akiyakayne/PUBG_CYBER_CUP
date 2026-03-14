@@ -531,64 +531,72 @@
         }
 
         // Загрузка основной таблицы
-        async function loadMainTable() {
-            const loadingEl = document.getElementById('main-loading');
-            const containerEl = document.getElementById('main-table-container');
-            
-            loadingEl.style.display = 'block';
-            containerEl.style.display = 'none';
-            
-            const data = await fetchSheetData(CONFIG.SHEETS.MAIN);
-            
-            if (data.length === 0) {
-                loadingEl.style.display = 'none';
-                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Нет данных для отображения</p>';
-                containerEl.style.display = 'block';
-                return;
-            }
-            
-            // Преобразуем в удобный формат
-            const rows = data.map(row => ({
-                Rank: row[0] || '',
-                Team: row[1] || '',
-                Matches: row[2] || '',
-                PlacePts: row[3] || '',
-                Kills: row[4] || '',
-                TotalPoints: row[5] || ''
-            }));
-            
-            // Сортируем по рангу
-            rows.sort((a, b) => {
-                const rankA = parseFloat(a.Rank) || 999;
-                const rankB = parseFloat(b.Rank) || 999;
-                return rankA - rankB;
-            });
-            
-            let html = '<table><thead><tr>';
-            html += '<th>Ранг</th><th>Команда</th><th>Матчи</th><th>Очки за места</th><th>Киллы</th><th>Всего очков</th>';
-            html += '</tr></thead><tbody>';
-            
-            rows.forEach((row, index) => {
-                const rank = parseFloat(row.Rank) || index + 1;
-                const rankClass = index < 3 ? ` rank-${index + 1}` : '';
-                
-                html += `<tr class="${rankClass}">`;
-                html += `<td><strong>#${rank}</strong></td>`;
-                html += `<td>${row.Team || '-'}</td>`;
-                html += `<td>${row.Matches || '0'}</td>`;
-                html += `<td>${row.PlacePts || '0'}</td>`;
-                html += `<td>${row.Kills || '0'}</td>`;
-                html += `<td><strong style="color: #f7b731;">${row.TotalPoints || '0'}</strong></td>`;
-                html += '</tr>';
-            });
-            
-            html += '</tbody></table>';
-            
-            containerEl.innerHTML = html;
+    async function loadMainTable() {
+        const loadingEl = document.getElementById('main-loading');
+        const containerEl = document.getElementById('main-table-container');
+
+        loadingEl.style.display = 'block';
+        containerEl.style.display = 'none';
+
+        const data = await fetchSheetData(CONFIG.SHEETS.MAIN);
+
+        if (data.length === 0) {
             loadingEl.style.display = 'none';
+            containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Нет данных для отображения</p>';
             containerEl.style.display = 'block';
-            updateLastUpdateTime();
+            return;
         }
+
+        // Преобразуем в объекты с полями
+        const rows = data.map(row => ({
+            Rank: row[0] || '',
+            Team: row[1] || '',
+            Matches: row[2] || '',
+            PlacePts: row[3] || '',
+            Kills: row[4] || '',
+            TotalPoints: row[5] || ''
+        }));
+
+        // Фильтруем: оставляем только строки, где Rank — число, а Team не равна 'Team'
+        const validRows = rows.filter(row => {
+            const rankNum = parseFloat(row.Rank);
+            if (isNaN(rankNum)) return false;               // убираем нечисловые ранги (например, '#17')
+            if (row.Team === 'Team' || row.Team.trim() === '') return false; // убираем заголовки и пустые команды
+            return true;
+        });
+
+        // Сортируем по рангу
+        validRows.sort((a, b) => {
+            const rankA = parseFloat(a.Rank) || 999;
+            const rankB = parseFloat(b.Rank) || 999;
+            return rankA - rankB;
+        });
+
+        let html = '<table><thead><tr>';
+        html += '<th>Ранг</th><th>Команда</th><th>Матчи</th><th>Очки за места</th><th>Киллы</th><th>Всего очков</th>';
+        html += '</tr></thead><tbody>';
+        
+        validRows.forEach((row, index) => {
+            const rank = parseFloat(row.Rank) || index + 1;
+            const rankClass = index < 3 ? ` rank-${index + 1}` : '';
+
+            html += `<tr class="${rankClass}">`;
+            html += `<td><strong>#${rank}</strong></td>`;
+            html += `<td>${row.Team || '-'}</td>`;
+            html += `<td>${row.Matches || '0'}</td>`;
+            html += `<td>${row.PlacePts || '0'}</td>`;
+            html += `<td>${row.Kills || '0'}</td>`;
+            html += `<td><strong style="color: #f7b731;">${row.TotalPoints || '0'}</strong></td>`;
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+
+        containerEl.innerHTML = html;
+        loadingEl.style.display = 'none';
+        containerEl.style.display = 'block';
+        updateLastUpdateTime();
+    }
 
         // Загрузка статистики команд
         async function loadTeamsStats() {
@@ -740,17 +748,17 @@
     async function loadPlayersStats() {
         const loadingEl = document.getElementById('players-loading');
         const containerEl = document.getElementById('players-container');
-        
+
         loadingEl.style.display = 'block';
         containerEl.style.display = 'none';
-        
+
         console.log('🚀 Начинаем загрузку статистики игроков...');
-        
+
         const data = await fetchSheetData(CONFIG.SHEETS.PLAYERS);
-        
+
         console.log('📊 ПОЛУЧЕННЫЕ ДАННЫЕ (первые 10 строк):', data.slice(0, 10));
         console.log('📊 ВСЕГО СТРОК:', data.length);
-        
+
         if (data.length === 0) {
             console.error('❌ Данные не загрузились!');
             loadingEl.style.display = 'none';
@@ -758,7 +766,7 @@
             containerEl.style.display = 'block';
             return;
         }
-        
+
         // Преобразуем в объекты с именами полей (используем порядок столбцов из структуры)
         const players = data.map(row => ({
             Player: row[0] ? row[0].replace(/^Player\s+/i, '').trim() : '',
@@ -781,21 +789,21 @@
             RideDistance: row[17] || '',
             TimeSurvived: row[18] || '0'
         }));
-        
+
         console.log('🔑 Пример первой строки после обработки:', players[0]);
-        
+
         // Фильтруем только строки с реальными игроками и у которых есть матчи
         const validPlayers = players.filter(p => {
             // Имя не пустое и не заголовок
             if (!p.Player || p.Player === 'Player' || p.Player.trim() === '') return false;
-            
+
             // Проверяем, что количество матчей > 0 (игрок участвовал)
             const matches = parseFloat(String(p.NumberOfMatches).replace(',', '.')) || 0;
             return matches > 0;
         });
-        
+
         console.log('👥 Количество валидных игроков (сыгравших):', validPlayers.length);
-        
+
         if (validPlayers.length === 0) {
             console.warn('❌ Нет валидных игроков с сыгранными матчами.');
             loadingEl.style.display = 'none';
@@ -803,7 +811,7 @@
             containerEl.style.display = 'block';
             return;
         }
-        
+
         // Строим таблицу
         let html = '<table><thead><tr>';
         html += '<th>Игрок</th><th>Команда</th><th>Матчи</th><th>K/D</th><th>KDA</th><th>KAS</th><th>Киллы</th><th>Смерти</th><th>Ассисты</th><th>Нокауты</th><th>Урон</th><th>Реанимации</th><th>Хедшоты</th><th>Longest Kill</th><th>Время выживания</th>';
@@ -820,15 +828,15 @@
             const headshots = parseFloat(String(p.HeadshotKills).replace(',', '.')) || 0;
             const longestKill = parseFloat(String(p.LongestKill).replace(',', '.')) || 0;
             const timeSurvived = parseFloat(String(p.TimeSurvived).replace(',', '.')) || 0;
-            
+
             let kd = p.KD ? parseFloat(String(p.KD).replace(',', '.')) : (deaths > 0 ? kills / deaths : kills);
             let kda = p.KDA ? parseFloat(String(p.KDA).replace(',', '.')) : (deaths > 0 ? (kills + assists) / deaths : kills + assists);
             let kas = p.KAS ? parseFloat(String(p.KAS).replace(',', '.')) : 0;
-            
+
             kd = kd.toFixed(2);
             kda = kda.toFixed(2);
             if (kas) kas = kas.toFixed(2);
-            
+
             html += '<tr>';
             html += `<td><strong>${p.Player}</strong></td>`;
             html += `<td>${p.Team || '-'}</td>`;
@@ -847,14 +855,14 @@
             html += `<td>${timeSurvived}</td>`;
             html += '</tr>';
         });
-        
+
         html += '</tbody></table>';
-        
+
         containerEl.innerHTML = html;
         loadingEl.style.display = 'none';
         containerEl.style.display = 'block';
         updateLastUpdateTime();
-        
+
         console.log('✅ Таблица игроков успешно отрисована.');
     }
 
