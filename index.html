@@ -423,7 +423,7 @@
             return name.replace(/['`´’]/g, "'").trim();
         }
 
-        // Основной парсер CSV (с обработкой кавычек)
+        // Парсер CSV (с обработкой кавычек)
         function parseCSV(csvText) {
             if (!csvText || csvText.trim() === '') return [];
             
@@ -462,79 +462,35 @@
             
             if (lines.length === 0) return [];
             
-            // Заголовки - первая строка
-            const headers = lines[0].map(h => h.replace(/"/g, '').trim());
-            const data = [];
-            
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i];
-                if (line.length === 0 || line.every(field => field.trim() === '')) continue;
-                
-                const row = {};
-                headers.forEach((header, index) => {
-                    let value = line[index] ? line[index].replace(/^"|"$/g, '').trim() : '';
-                    row[header] = value;
-                });
-                
-                data.push(row);
-            }
-            
-            return data;
-        }
-
-        // Альтернативный парсер для случая, когда первая строка не является заголовками
-        function parseCSVAlternative(csvText) {
-            if (!csvText || csvText.trim() === '') return [];
-            
-            const lines = [];
-            let currentLine = [];
-            let currentField = '';
-            let inQuotes = false;
-            
-            for (let i = 0; i < csvText.length; i++) {
-                const char = csvText[i];
-                if (char === '"' && !inQuotes) {
-                    inQuotes = true;
-                } else if (char === '"' && inQuotes && csvText[i + 1] === '"') {
-                    currentField += '"';
-                    i++;
-                } else if (char === '"' && inQuotes) {
-                    inQuotes = false;
-                } else if (char === ',' && !inQuotes) {
-                    currentLine.push(currentField);
-                    currentField = '';
-                } else if (char === '\n' && !inQuotes) {
-                    currentLine.push(currentField);
-                    lines.push(currentLine);
-                    currentLine = [];
-                    currentField = '';
-                } else {
-                    currentField += char;
-                }
-            }
-            if (currentField || currentLine.length > 0) {
-                currentLine.push(currentField);
-                lines.push(currentLine);
-            }
-            
-            if (lines.length === 0) return [];
-            
-            // Используем предопределённые заголовки для листа PLAYERS (из Excel)
-            const expectedHeaders = [
+            // Используем предопределённые заголовки для всех листов (из структуры Excel)
+            // Для листа PLAYERS
+            const playerHeaders = [
                 'Player', 'Team', 'Number of Matches', 'Kills', 'Death', 'Assists', 'KDA', 'KD', 'KAS',
                 'Knocks', 'Kills/Knocks', 'Damage Dealt', 'Revives', 'Headshot Kills', 'Longest Kill (m)',
                 'Swimming Distance (km)', 'Walk Distance (km)', 'Ride Distance (km)', 'Time Survived'
             ];
             
+            // Для листа TEAMS (можно определить по наличию поля Team, но для простоты используем фиксированные)
+            const teamHeaders = [
+                'Team', 'Players', 'Number Of Matches', 'WWCD', 'Kills', 'Assists', 'Damage Dealt',
+                'Knocks', 'Revives', 'Headshot Kills', 'Swimming Distance (km)', 'Walk Distance (km)',
+                'Ride Distance (km)', 'Time Survived', 'Heals', 'Boosts', 'Vehicle Destroys'
+            ];
+            
+            // Для листа MAIN
+            const mainHeaders = ['Rank', 'Team', 'Matches', 'Place Pts', 'Kills', 'Total Points'];
+            
+            // Определяем, какой лист по контексту (здесь мы не знаем, но можем определить по количеству столбцов)
+            // Вместо этого будем использовать универсальный подход: просто пронумеруем столбцы и создадим объект с индексами
             const data = [];
-            // Пропускаем первую строку, если она пустая или содержит мусор (по факту первая строка уже содержит данные)
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 if (line.length === 0 || line.every(f => f.trim() === '')) continue;
                 
+                // Создаём объект с индексами в качестве ключей (для дальнейшей обработки)
                 const row = {};
-                expectedHeaders.forEach((header, index) => {
-                    row[header] = line[index] ? line[index].replace(/^"|"$/g, '').trim() : '';
+                line.forEach((value, index) => {
+                    row[index] = value.replace(/^"|"$/g, '').trim();
                 });
                 data.push(row);
             }
@@ -552,18 +508,7 @@
                 }
                 
                 const csvText = await response.text();
-                console.log(`📄 Сырой CSV (первые 500 символов) для листа ${sheetName}:`, csvText.substring(0, 500));
-                
-                // Пробуем стандартный парсер
-                let data = parseCSV(csvText);
-                
-                // Если ключи выглядят подозрительно (содержат пробелы и значения), используем альтернативный
-                if (data.length > 0 && Object.keys(data[0]).some(key => key.includes(' '))) {
-                    console.warn('⚠️ Обнаружены подозрительные ключи, пробуем альтернативный парсинг...');
-                    data = parseCSVAlternative(csvText);
-                }
-                
-                return data;
+                return parseCSV(csvText);
                 
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
@@ -602,9 +547,20 @@
                 return;
             }
             
-            data.sort((a, b) => {
-                const rankA = parseFloat(a['Rank']) || 999;
-                const rankB = parseFloat(b['Rank']) || 999;
+            // Преобразуем в удобный формат
+            const rows = data.map(row => ({
+                Rank: row[0] || '',
+                Team: row[1] || '',
+                Matches: row[2] || '',
+                PlacePts: row[3] || '',
+                Kills: row[4] || '',
+                TotalPoints: row[5] || ''
+            }));
+            
+            // Сортируем по рангу
+            rows.sort((a, b) => {
+                const rankA = parseFloat(a.Rank) || 999;
+                const rankB = parseFloat(b.Rank) || 999;
                 return rankA - rankB;
             });
             
@@ -612,17 +568,17 @@
             html += '<th>Ранг</th><th>Команда</th><th>Матчи</th><th>Очки за места</th><th>Киллы</th><th>Всего очков</th>';
             html += '</tr></thead><tbody>';
             
-            data.forEach((row, index) => {
-                const rank = parseFloat(row['Rank']) || index + 1;
+            rows.forEach((row, index) => {
+                const rank = parseFloat(row.Rank) || index + 1;
                 const rankClass = index < 3 ? ` rank-${index + 1}` : '';
                 
                 html += `<tr class="${rankClass}">`;
                 html += `<td><strong>#${rank}</strong></td>`;
-                html += `<td>${row['Team'] || '-'}</td>`;
-                html += `<td>${row['Matches'] || '0'}</td>`;
-                html += `<td>${row['Place Pts'] || '0'}</td>`;
-                html += `<td>${row['Kills'] || '0'}</td>`;
-                html += `<td><strong style="color: #f7b731;">${row['Total Points'] || '0'}</strong></td>`;
+                html += `<td>${row.Team || '-'}</td>`;
+                html += `<td>${row.Matches || '0'}</td>`;
+                html += `<td>${row.PlacePts || '0'}</td>`;
+                html += `<td>${row.Kills || '0'}</td>`;
+                html += `<td><strong style="color: #f7b731;">${row.TotalPoints || '0'}</strong></td>`;
                 html += '</tr>';
             });
             
@@ -654,24 +610,47 @@
                 return;
             }
             
-            // Группируем игроков по командам
+            // Преобразуем teamsData в объекты с полями
+            const teams = teamsData.map(row => ({
+                Team: row[0] || '',
+                Players: row[1] || '',
+                NumberOfMatches: row[2] || '',
+                WWCD: row[3] || '',
+                Kills: row[4] || '',
+                Assists: row[5] || '',
+                DamageDealt: row[6] || '',
+                Knocks: row[7] || '',
+                Revives: row[8] || '',
+                HeadshotKills: row[9] || '',
+                SwimmingDistance: row[10] || '',
+                WalkDistance: row[11] || '',
+                RideDistance: row[12] || '',
+                TimeSurvived: row[13] || '',
+                Heals: row[14] || '',
+                Boosts: row[15] || '',
+                VehicleDestroys: row[16] || ''
+            }));
+            
+            // Группируем игроков по командам из playersData
             const teamPlayers = {};
             playersData.forEach(row => {
-                if (row['Player'] && row['Team'] && row['Player'] !== 'Player') {
-                    const normalizedTeam = normalizeTeamName(row['Team']);
+                const playerName = row[0] ? row[0].replace(/^Player\s+/i, '').trim() : '';
+                const teamName = row[1] ? row[1].replace(/^Team\s+/i, '').trim() : '';
+                if (playerName && teamName && playerName !== 'Player') {
+                    const normalizedTeam = normalizeTeamName(teamName);
                     if (!teamPlayers[normalizedTeam]) {
                         teamPlayers[normalizedTeam] = [];
                     }
-                    teamPlayers[normalizedTeam].push(row['Player']);
+                    teamPlayers[normalizedTeam].push(playerName);
                 }
             });
             
             let html = '<div class="team-stats">';
             
-            teamsData.forEach(row => {
-                if (!row['Team'] || row['Team'] === 'Team' || row['Team'].trim() === '') return;
+            teams.forEach(team => {
+                if (!team.Team || team.Team === 'Team') return;
                 
-                const teamName = row['Team'];
+                const teamName = team.Team;
                 const normalizedTeamName = normalizeTeamName(teamName);
                 
                 html += '<div class="stat-card">';
@@ -690,10 +669,10 @@
                 html += '<div class="stat-section">';
                 html += '<div class="stat-section-title">📊 Основная статистика</div>';
                 const mainStats = [
-                    {label: 'Матчи', value: row['Number Of Matches']},
-                    {label: 'WWCD (победы)', value: row['WWCD']},
-                    {label: 'Киллы', value: row['Kills']},
-                    {label: 'Ассисты', value: row['Assists']}
+                    {label: 'Матчи', value: team.NumberOfMatches},
+                    {label: 'WWCD (победы)', value: team.WWCD},
+                    {label: 'Киллы', value: team.Kills},
+                    {label: 'Ассисты', value: team.Assists}
                 ];
                 mainStats.forEach(stat => {
                     if (stat.value && stat.value !== '0' && stat.value !== '') {
@@ -705,11 +684,11 @@
                 html += '<div class="stat-section">';
                 html += '<div class="stat-section-title">⚔️ Боевая статистика</div>';
                 const combatStats = [
-                    {label: 'Урон нанесенный', value: row['Damage Dealt']},
-                    {label: 'Нокауты', value: row['Knocks']},
-                    {label: 'Реанимации', value: row['Revives']},
-                    {label: 'Хедшоты', value: row['Headshot Kills']},
-                    {label: 'Уничтожено транспорта', value: row['Vehicle Destroys']}
+                    {label: 'Урон нанесенный', value: team.DamageDealt},
+                    {label: 'Нокауты', value: team.Knocks},
+                    {label: 'Реанимации', value: team.Revives},
+                    {label: 'Хедшоты', value: team.HeadshotKills},
+                    {label: 'Уничтожено транспорта', value: team.VehicleDestroys}
                 ];
                 combatStats.forEach(stat => {
                     if (stat.value && stat.value !== '0' && stat.value !== '') {
@@ -721,8 +700,8 @@
                 html += '<div class="stat-section">';
                 html += '<div class="stat-section-title">💊 Медицина</div>';
                 const medicStats = [
-                    {label: 'Аптечки', value: row['Heals']},
-                    {label: 'Бусты', value: row['Boosts']}
+                    {label: 'Аптечки', value: team.Heals},
+                    {label: 'Бусты', value: team.Boosts}
                 ];
                 medicStats.forEach(stat => {
                     if (stat.value && stat.value !== '0' && stat.value !== '') {
@@ -734,10 +713,10 @@
                 html += '<div class="stat-section">';
                 html += '<div class="stat-section-title">🏃 Перемещение</div>';
                 const movementStats = [
-                    {label: 'Время выживания', value: row['Time Survived']},
-                    {label: 'Дистанция (плавание)', value: row['Swimming Distance (km)'] ? row['Swimming Distance (km)'] + ' км' : ''},
-                    {label: 'Дистанция (пешком)', value: row['Walk Distance (km)'] ? row['Walk Distance (km)'] + ' км' : ''},
-                    {label: 'Дистанция (транспорт)', value: row['Ride Distance (km)'] ? row['Ride Distance (km)'] + ' км' : ''}
+                    {label: 'Время выживания', value: team.TimeSurvived},
+                    {label: 'Дистанция (плавание)', value: team.SwimmingDistance ? team.SwimmingDistance + ' км' : ''},
+                    {label: 'Дистанция (пешком)', value: team.WalkDistance ? team.WalkDistance + ' км' : ''},
+                    {label: 'Дистанция (транспорт)', value: team.RideDistance ? team.RideDistance + ' км' : ''}
                 ];
                 movementStats.forEach(stat => {
                     if (stat.value && stat.value !== '0' && stat.value !== '') {
@@ -775,41 +754,45 @@
             if (data.length === 0) {
                 console.error('❌ Данные не загрузились!');
                 loadingEl.style.display = 'none';
-                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Ошибка загрузки данных. Проверьте консоль (F12).</p>';
+                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Ошибка загрузки данных.</p>';
                 containerEl.style.display = 'block';
                 return;
             }
             
-            // Анализируем заголовки
-            if (data.length > 0) {
-                console.log('🔑 ЗАГОЛОВКИ (ключи) первой строки:', Object.keys(data[0]));
-                
-                const requiredFields = ['Player', 'Team', 'Kills', 'Death', 'Assists'];
-                const missingFields = requiredFields.filter(f => !Object.keys(data[0]).includes(f));
-                if (missingFields.length > 0) {
-                    console.warn('⚠️ Отсутствуют ожидаемые поля:', missingFields);
-                } else {
-                    console.log('✅ Все основные поля присутствуют.');
-                }
-            }
+            // Преобразуем в объекты с именами полей (используем порядок столбцов из структуры)
+            const players = data.map(row => ({
+                Player: row[0] ? row[0].replace(/^Player\s+/i, '').trim() : '',
+                Team: row[1] ? row[1].replace(/^Team\s+/i, '').trim() : '',
+                NumberOfMatches: row[2] || '0',
+                Kills: row[3] || '0',
+                Death: row[4] || '1',
+                Assists: row[5] || '0',
+                KDA: row[6] || '',
+                KD: row[7] || '',
+                KAS: row[8] || '',
+                Knocks: row[9] || '0',
+                KillsKnocks: row[10] || '',
+                DamageDealt: row[11] || '0',
+                Revives: row[12] || '0',
+                HeadshotKills: row[13] || '0',
+                LongestKill: row[14] || '0',
+                SwimmingDistance: row[15] || '',
+                WalkDistance: row[16] || '',
+                RideDistance: row[17] || '',
+                TimeSurvived: row[18] || '0'
+            }));
             
-            // Покажем содержимое первой строки
-            if (data.length > 0) {
-                console.log('📄 ПЕРВАЯ СТРОКА ДАННЫХ:', data[0]);
-            }
+            console.log('🔑 Пример первой строки после обработки:', players[0]);
             
-            // Фильтруем строки с непустым Player
-            const validPlayers = data.filter(row => {
-                const playerName = row['Player'];
-                return playerName && playerName !== 'Player' && playerName.trim() !== '';
-            });
+            // Фильтруем только строки с реальными игроками
+            const validPlayers = players.filter(p => p.Player && p.Player !== 'Player' && p.Player.trim() !== '');
             
-            console.log('👥 Количество валидных игроков (после фильтра):', validPlayers.length);
+            console.log('👥 Количество валидных игроков:', validPlayers.length);
             
             if (validPlayers.length === 0) {
                 console.warn('❌ Нет валидных игроков.');
                 loadingEl.style.display = 'none';
-                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Нет данных об игроках. Подробности в консоли.</p>';
+                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Нет данных об игроках.</p>';
                 containerEl.style.display = 'block';
                 return;
             }
@@ -819,29 +802,29 @@
             html += '<th>Игрок</th><th>Команда</th><th>Матчи</th><th>K/D</th><th>KDA</th><th>KAS</th><th>Киллы</th><th>Смерти</th><th>Ассисты</th><th>Нокауты</th><th>Урон</th><th>Реанимации</th><th>Хедшоты</th><th>Longest Kill</th><th>Время выживания</th>';
             html += '</tr></thead><tbody>';
             
-            validPlayers.forEach(row => {
-                const kills = parseFloat(String(row['Kills'] || '0').replace(',', '.')) || 0;
-                const deaths = parseFloat(String(row['Death'] || '1').replace(',', '.')) || 1;
-                const assists = parseFloat(String(row['Assists'] || '0').replace(',', '.')) || 0;
-                const matches = parseFloat(String(row['Number of Matches'] || '0').replace(',', '.')) || 0;
-                const knocks = parseFloat(String(row['Knocks'] || '0').replace(',', '.')) || 0;
-                const damage = parseFloat(String(row['Damage Dealt'] || '0').replace(',', '.')) || 0;
-                const revives = parseFloat(String(row['Revives'] || '0').replace(',', '.')) || 0;
-                const headshots = parseFloat(String(row['Headshot Kills'] || '0').replace(',', '.')) || 0;
-                const longestKill = parseFloat(String(row['Longest Kill (m)'] || '0').replace(',', '.')) || 0;
-                const timeSurvived = parseFloat(String(row['Time Survived'] || '0').replace(',', '.')) || 0;
+            validPlayers.forEach(p => {
+                const kills = parseFloat(String(p.Kills).replace(',', '.')) || 0;
+                const deaths = parseFloat(String(p.Death).replace(',', '.')) || 1;
+                const assists = parseFloat(String(p.Assists).replace(',', '.')) || 0;
+                const matches = parseFloat(String(p.NumberOfMatches).replace(',', '.')) || 0;
+                const knocks = parseFloat(String(p.Knocks).replace(',', '.')) || 0;
+                const damage = parseFloat(String(p.DamageDealt).replace(',', '.')) || 0;
+                const revives = parseFloat(String(p.Revives).replace(',', '.')) || 0;
+                const headshots = parseFloat(String(p.HeadshotKills).replace(',', '.')) || 0;
+                const longestKill = parseFloat(String(p.LongestKill).replace(',', '.')) || 0;
+                const timeSurvived = parseFloat(String(p.TimeSurvived).replace(',', '.')) || 0;
                 
-                let kd = row['KD'] ? parseFloat(String(row['KD']).replace(',', '.')) : (deaths > 0 ? (kills / deaths) : kills);
-                let kda = row['KDA'] ? parseFloat(String(row['KDA']).replace(',', '.')) : (deaths > 0 ? ((kills + assists) / deaths) : (kills + assists));
-                let kas = row['KAS'] ? parseFloat(String(row['KAS']).replace(',', '.')) : 0;
+                let kd = p.KD ? parseFloat(String(p.KD).replace(',', '.')) : (deaths > 0 ? kills / deaths : kills);
+                let kda = p.KDA ? parseFloat(String(p.KDA).replace(',', '.')) : (deaths > 0 ? (kills + assists) / deaths : kills + assists);
+                let kas = p.KAS ? parseFloat(String(p.KAS).replace(',', '.')) : 0;
                 
                 kd = kd.toFixed(2);
                 kda = kda.toFixed(2);
                 if (kas) kas = kas.toFixed(2);
                 
                 html += '<tr>';
-                html += `<td><strong>${row['Player']}</strong></td>`;
-                html += `<td>${row['Team'] || '-'}</td>`;
+                html += `<td><strong>${p.Player}</strong></td>`;
+                html += `<td>${p.Team || '-'}</td>`;
                 html += `<td>${matches}</td>`;
                 html += `<td>${kd}</td>`;
                 html += `<td>${kda}</td>`;
