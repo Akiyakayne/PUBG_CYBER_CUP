@@ -416,6 +416,13 @@
             }
         };
 
+        // Функция для нормализации названий команд (убираем различия в апострофах)
+        function normalizeTeamName(name) {
+            if (!name) return '';
+            // Заменяем разные типы апострофов на стандартный
+            return name.replace(/['`´’]/g, "'").trim();
+        }
+
         // Улучшенный парсер CSV
         function parseCSV(csvText) {
             if (!csvText || csvText.trim() === '') return [];
@@ -430,6 +437,10 @@
                 
                 if (char === '"' && !inQuotes) {
                     inQuotes = true;
+                } else if (char === '"' && inQuotes && csvText[i + 1] === '"') {
+                    // Экранированные кавычки
+                    currentField += '"';
+                    i++;
                 } else if (char === '"' && inQuotes) {
                     inQuotes = false;
                 } else if (char === ',' && !inQuotes) {
@@ -452,7 +463,7 @@
             
             if (lines.length === 0) return [];
             
-            const headers = lines[0].map(h => h.trim());
+            const headers = lines[0].map(h => h.replace(/"/g, '').trim());
             const data = [];
             
             for (let i = 1; i < lines.length; i++) {
@@ -461,7 +472,8 @@
                 
                 const row = {};
                 headers.forEach((header, index) => {
-                    row[header] = line[index] ? line[index].trim() : '';
+                    let value = line[index] ? line[index].replace(/^"|"$/g, '').trim() : '';
+                    row[header] = value;
                 });
                 
                 data.push(row);
@@ -574,15 +586,22 @@
                 return;
             }
             
-            // Группируем игроков по командам
+            // Группируем игроков по командам с нормализацией названий
             const teamPlayers = {};
             playersData.forEach(row => {
                 if (row['Player'] && row['Team'] && row['Player'] !== 'Player') {
-                    if (!teamPlayers[row['Team']]) {
-                        teamPlayers[row['Team']] = [];
+                    const normalizedTeam = normalizeTeamName(row['Team']);
+                    if (!teamPlayers[normalizedTeam]) {
+                        teamPlayers[normalizedTeam] = [];
                     }
-                    teamPlayers[row['Team']].push(row['Player']);
+                    teamPlayers[normalizedTeam].push(row['Player']);
                 }
+            });
+            
+            // Создаем мапу для быстрого поиска состава по нормализованному названию
+            const teamPlayersMap = {};
+            Object.keys(teamPlayers).forEach(key => {
+                teamPlayersMap[key] = teamPlayers[key];
             });
             
             let html = '<div class="team-stats">';
@@ -593,21 +612,38 @@
                 if (!row['Team'] || row['Team'] === 'Team' || row['Team'].trim() === '') return;
                 
                 const teamName = row['Team'];
+                const normalizedTeamName = normalizeTeamName(teamName);
                 
                 html += '<div class="stat-card">';
                 html += `<h3>🏆 ${teamName}</h3>`;
                 
                 // Добавляем список игроков из сгруппированных данных
-                if (teamPlayers[teamName] && teamPlayers[teamName].length > 0) {
+                if (teamPlayersMap[normalizedTeamName] && teamPlayersMap[normalizedTeamName].length > 0) {
                     html += '<div class="players-list">';
                     html += '<div class="players-list-title">👥 Состав команды</div>';
                     html += '<div class="players-grid">';
                     
-                    teamPlayers[teamName].forEach(player => {
+                    teamPlayersMap[normalizedTeamName].forEach(player => {
                         html += `<div class="player-item">🎮 ${player}</div>`;
                     });
                     
                     html += '</div></div>';
+                } else {
+                    // Если в таблице игроков нет состава, пробуем взять из поля Players
+                    if (row['Players'] && row['Players'].trim() !== '') {
+                        const players = row['Players'].split(',').map(p => p.trim()).filter(p => p !== '');
+                        if (players.length > 0) {
+                            html += '<div class="players-list">';
+                            html += '<div class="players-list-title">👥 Состав команды (из таблицы команд)</div>';
+                            html += '<div class="players-grid">';
+                            
+                            players.forEach(player => {
+                                html += `<div class="player-item">🎮 ${player}</div>`;
+                            });
+                            
+                            html += '</div></div>';
+                        }
+                    }
                 }
                 
                 // Основная статистика
@@ -616,9 +652,7 @@
                 
                 const mainStats = [
                     {label: 'Матчи', value: row['Number Of Matches']},
-                    {label: 'WWCD (победы)', value: row['WWCD']},
-                    {label: 'Киллы', value: row['Kills']},
-                    {label: 'Ассисты', value: row['Assists']}
+                    {label: 'WWCD (победы)', value: row['WWCD']}
                 ];
                 
                 mainStats.forEach(stat => {
@@ -633,6 +667,8 @@
                 html += '<div class="stat-section-title">⚔️ Боевая статистика</div>';
                 
                 const combatStats = [
+                    {label: 'Киллы', value: row['Kills']},
+                    {label: 'Ассисты', value: row['Assists']},
                     {label: 'Урон нанесенный', value: row['Damage Dealt']},
                     {label: 'Урон полученный', value: row['Damage Taken']},
                     {label: 'Нокауты', value: row['Knocks']},
