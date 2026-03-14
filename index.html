@@ -736,120 +736,127 @@
             updateLastUpdateTime();
         }
 
-        // Загрузка статистики игроков
-        async function loadPlayersStats() {
-            const loadingEl = document.getElementById('players-loading');
-            const containerEl = document.getElementById('players-container');
-            
-            loadingEl.style.display = 'block';
-            containerEl.style.display = 'none';
-            
-            console.log('🚀 Начинаем загрузку статистики игроков...');
-            
-            const data = await fetchSheetData(CONFIG.SHEETS.PLAYERS);
-            
-            console.log('📊 ПОЛУЧЕННЫЕ ДАННЫЕ (первые 10 строк):', data.slice(0, 10));
-            console.log('📊 ВСЕГО СТРОК:', data.length);
-            
-            if (data.length === 0) {
-                console.error('❌ Данные не загрузились!');
-                loadingEl.style.display = 'none';
-                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Ошибка загрузки данных.</p>';
-                containerEl.style.display = 'block';
-                return;
-            }
-            
-            // Преобразуем в объекты с именами полей (используем порядок столбцов из структуры)
-            const players = data.map(row => ({
-                Player: row[0] ? row[0].replace(/^Player\s+/i, '').trim() : '',
-                Team: row[1] ? row[1].replace(/^Team\s+/i, '').trim() : '',
-                NumberOfMatches: row[2] || '0',
-                Kills: row[3] || '0',
-                Death: row[4] || '1',
-                Assists: row[5] || '0',
-                KDA: row[6] || '',
-                KD: row[7] || '',
-                KAS: row[8] || '',
-                Knocks: row[9] || '0',
-                KillsKnocks: row[10] || '',
-                DamageDealt: row[11] || '0',
-                Revives: row[12] || '0',
-                HeadshotKills: row[13] || '0',
-                LongestKill: row[14] || '0',
-                SwimmingDistance: row[15] || '',
-                WalkDistance: row[16] || '',
-                RideDistance: row[17] || '',
-                TimeSurvived: row[18] || '0'
-            }));
-            
-            console.log('🔑 Пример первой строки после обработки:', players[0]);
-            
-            // Фильтруем только строки с реальными игроками
-            const validPlayers = players.filter(p => p.Player && p.Player !== 'Player' && p.Player.trim() !== '');
-            
-            console.log('👥 Количество валидных игроков:', validPlayers.length);
-            
-            if (validPlayers.length === 0) {
-                console.warn('❌ Нет валидных игроков.');
-                loadingEl.style.display = 'none';
-                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Нет данных об игроках.</p>';
-                containerEl.style.display = 'block';
-                return;
-            }
-            
-            // Строим таблицу
-            let html = '<table><thead><tr>';
-            html += '<th>Игрок</th><th>Команда</th><th>Матчи</th><th>K/D</th><th>KDA</th><th>KAS</th><th>Киллы</th><th>Смерти</th><th>Ассисты</th><th>Нокауты</th><th>Урон</th><th>Реанимации</th><th>Хедшоты</th><th>Longest Kill</th><th>Время выживания</th>';
-            html += '</tr></thead><tbody>';
-            
-            validPlayers.forEach(p => {
-                const kills = parseFloat(String(p.Kills).replace(',', '.')) || 0;
-                const deaths = parseFloat(String(p.Death).replace(',', '.')) || 1;
-                const assists = parseFloat(String(p.Assists).replace(',', '.')) || 0;
-                const matches = parseFloat(String(p.NumberOfMatches).replace(',', '.')) || 0;
-                const knocks = parseFloat(String(p.Knocks).replace(',', '.')) || 0;
-                const damage = parseFloat(String(p.DamageDealt).replace(',', '.')) || 0;
-                const revives = parseFloat(String(p.Revives).replace(',', '.')) || 0;
-                const headshots = parseFloat(String(p.HeadshotKills).replace(',', '.')) || 0;
-                const longestKill = parseFloat(String(p.LongestKill).replace(',', '.')) || 0;
-                const timeSurvived = parseFloat(String(p.TimeSurvived).replace(',', '.')) || 0;
-                
-                let kd = p.KD ? parseFloat(String(p.KD).replace(',', '.')) : (deaths > 0 ? kills / deaths : kills);
-                let kda = p.KDA ? parseFloat(String(p.KDA).replace(',', '.')) : (deaths > 0 ? (kills + assists) / deaths : kills + assists);
-                let kas = p.KAS ? parseFloat(String(p.KAS).replace(',', '.')) : 0;
-                
-                kd = kd.toFixed(2);
-                kda = kda.toFixed(2);
-                if (kas) kas = kas.toFixed(2);
-                
-                html += '<tr>';
-                html += `<td><strong>${p.Player}</strong></td>`;
-                html += `<td>${p.Team || '-'}</td>`;
-                html += `<td>${matches}</td>`;
-                html += `<td>${kd}</td>`;
-                html += `<td>${kda}</td>`;
-                html += `<td>${kas}</td>`;
-                html += `<td>${kills}</td>`;
-                html += `<td>${deaths}</td>`;
-                html += `<td>${assists}</td>`;
-                html += `<td>${knocks}</td>`;
-                html += `<td>${damage}</td>`;
-                html += `<td>${revives}</td>`;
-                html += `<td>${headshots}</td>`;
-                html += `<td>${longestKill}м</td>`;
-                html += `<td>${timeSurvived}</td>`;
-                html += '</tr>';
-            });
-            
-            html += '</tbody></table>';
-            
-            containerEl.innerHTML = html;
+    // Загрузка статистики игроков
+    async function loadPlayersStats() {
+        const loadingEl = document.getElementById('players-loading');
+        const containerEl = document.getElementById('players-container');
+        
+        loadingEl.style.display = 'block';
+        containerEl.style.display = 'none';
+        
+        console.log('🚀 Начинаем загрузку статистики игроков...');
+        
+        const data = await fetchSheetData(CONFIG.SHEETS.PLAYERS);
+        
+        console.log('📊 ПОЛУЧЕННЫЕ ДАННЫЕ (первые 10 строк):', data.slice(0, 10));
+        console.log('📊 ВСЕГО СТРОК:', data.length);
+        
+        if (data.length === 0) {
+            console.error('❌ Данные не загрузились!');
             loadingEl.style.display = 'none';
+            containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Ошибка загрузки данных.</p>';
             containerEl.style.display = 'block';
-            updateLastUpdateTime();
-            
-            console.log('✅ Таблица игроков успешно отрисована.');
+            return;
         }
+        
+        // Преобразуем в объекты с именами полей (используем порядок столбцов из структуры)
+        const players = data.map(row => ({
+            Player: row[0] ? row[0].replace(/^Player\s+/i, '').trim() : '',
+            Team: row[1] ? row[1].replace(/^Team\s+/i, '').trim() : '',
+            NumberOfMatches: row[2] || '0',
+            Kills: row[3] || '0',
+            Death: row[4] || '1',
+            Assists: row[5] || '0',
+            KDA: row[6] || '',
+            KD: row[7] || '',
+            KAS: row[8] || '',
+            Knocks: row[9] || '0',
+            KillsKnocks: row[10] || '',
+            DamageDealt: row[11] || '0',
+            Revives: row[12] || '0',
+            HeadshotKills: row[13] || '0',
+            LongestKill: row[14] || '0',
+            SwimmingDistance: row[15] || '',
+            WalkDistance: row[16] || '',
+            RideDistance: row[17] || '',
+            TimeSurvived: row[18] || '0'
+        }));
+        
+        console.log('🔑 Пример первой строки после обработки:', players[0]);
+        
+        // Фильтруем только строки с реальными игроками и у которых есть матчи
+        const validPlayers = players.filter(p => {
+            // Имя не пустое и не заголовок
+            if (!p.Player || p.Player === 'Player' || p.Player.trim() === '') return false;
+            
+            // Проверяем, что количество матчей > 0 (игрок участвовал)
+            const matches = parseFloat(String(p.NumberOfMatches).replace(',', '.')) || 0;
+            return matches > 0;
+        });
+        
+        console.log('👥 Количество валидных игроков (сыгравших):', validPlayers.length);
+        
+        if (validPlayers.length === 0) {
+            console.warn('❌ Нет валидных игроков с сыгранными матчами.');
+            loadingEl.style.display = 'none';
+            containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Нет данных об игроках.</p>';
+            containerEl.style.display = 'block';
+            return;
+        }
+        
+        // Строим таблицу
+        let html = '<table><thead><tr>';
+        html += '<th>Игрок</th><th>Команда</th><th>Матчи</th><th>K/D</th><th>KDA</th><th>KAS</th><th>Киллы</th><th>Смерти</th><th>Ассисты</th><th>Нокауты</th><th>Урон</th><th>Реанимации</th><th>Хедшоты</th><th>Longest Kill</th><th>Время выживания</th>';
+        html += '</tr></thead><tbody>';
+        
+        validPlayers.forEach(p => {
+            const kills = parseFloat(String(p.Kills).replace(',', '.')) || 0;
+            const deaths = parseFloat(String(p.Death).replace(',', '.')) || 1;
+            const assists = parseFloat(String(p.Assists).replace(',', '.')) || 0;
+            const matches = parseFloat(String(p.NumberOfMatches).replace(',', '.')) || 0;
+            const knocks = parseFloat(String(p.Knocks).replace(',', '.')) || 0;
+            const damage = parseFloat(String(p.DamageDealt).replace(',', '.')) || 0;
+            const revives = parseFloat(String(p.Revives).replace(',', '.')) || 0;
+            const headshots = parseFloat(String(p.HeadshotKills).replace(',', '.')) || 0;
+            const longestKill = parseFloat(String(p.LongestKill).replace(',', '.')) || 0;
+            const timeSurvived = parseFloat(String(p.TimeSurvived).replace(',', '.')) || 0;
+            
+            let kd = p.KD ? parseFloat(String(p.KD).replace(',', '.')) : (deaths > 0 ? kills / deaths : kills);
+            let kda = p.KDA ? parseFloat(String(p.KDA).replace(',', '.')) : (deaths > 0 ? (kills + assists) / deaths : kills + assists);
+            let kas = p.KAS ? parseFloat(String(p.KAS).replace(',', '.')) : 0;
+            
+            kd = kd.toFixed(2);
+            kda = kda.toFixed(2);
+            if (kas) kas = kas.toFixed(2);
+            
+            html += '<tr>';
+            html += `<td><strong>${p.Player}</strong></td>`;
+            html += `<td>${p.Team || '-'}</td>`;
+            html += `<td>${matches}</td>`;
+            html += `<td>${kd}</td>`;
+            html += `<td>${kda}</td>`;
+            html += `<td>${kas}</td>`;
+            html += `<td>${kills}</td>`;
+            html += `<td>${deaths}</td>`;
+            html += `<td>${assists}</td>`;
+            html += `<td>${knocks}</td>`;
+            html += `<td>${damage}</td>`;
+            html += `<td>${revives}</td>`;
+            html += `<td>${headshots}</td>`;
+            html += `<td>${longestKill}м</td>`;
+            html += `<td>${timeSurvived}</td>`;
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        
+        containerEl.innerHTML = html;
+        loadingEl.style.display = 'none';
+        containerEl.style.display = 'block';
+        updateLastUpdateTime();
+        
+        console.log('✅ Таблица игроков успешно отрисована.');
+    }
 
         // Переключение вкладок
         function switchTab(tabName, event) {
