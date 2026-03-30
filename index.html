@@ -3,897 +3,1398 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PUBG Турнирная таблица - Студенческий турнир</title>
+    <title>PUBG Студенческий Турнир 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
-        /* ... все стили без изменений ... */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: #1a1e2b;
-            color: #e0e0e0;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        h1 {
-            color: #f7b731;
-            margin-bottom: 20px;
-            font-size: 2.5rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            border-bottom: 2px solid #f7b731;
-            padding-bottom: 10px;
-        }
-        
-        h2 {
-            color: #f7b731;
-            margin: 20px 0 10px 0;
-            font-size: 1.5rem;
-        }
-        
-        .tournament-info {
-            background: linear-gradient(135deg, #2a2f3f 0%, #1e2332 100%);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            border-left: 4px solid #f7b731;
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .info-item {
-            background: rgba(0,0,0,0.3);
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #3a4050;
-        }
-        
-        .info-label {
-            color: #a0a0a0;
-            font-size: 0.9rem;
-        }
-        
-        .info-value {
-            color: #f7b731;
-            font-size: 1.3rem;
-            font-weight: bold;
-        }
-        
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .tab-btn {
-            padding: 12px 24px;
-            background: #2a2f3f;
-            border: none;
-            color: #a0a0a0;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.3s;
-            border: 1px solid #3a4050;
-        }
-        
-        .tab-btn:hover {
-            background: #3a4050;
-            color: #fff;
-        }
-        
-        .tab-btn.active {
-            background: #f7b731;
-            color: #1a1e2b;
-            border-color: #f7b731;
-        }
-        
-        .tab-content {
-            display: none;
-            background: #242937;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            overflow-x: auto;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-        
-        th {
-            background: #1e2332;
-            color: #f7b731;
-            padding: 12px 8px;
-            font-weight: 600;
-            text-align: left;
-            white-space: nowrap;
-            border-bottom: 2px solid #f7b731;
-        }
-        
-        td {
-            padding: 10px 8px;
-            border-bottom: 1px solid #3a4050;
-            white-space: nowrap;
-        }
-        
-        tr:hover {
-            background: #2a2f3f;
-        }
-        
-        .rank-1 {
-            background: rgba(247, 183, 49, 0.1);
-            border-left: 3px solid #f7b731;
-        }
-        
-        .rank-2 {
-            background: rgba(192, 192, 192, 0.1);
-            border-left: 3px solid #c0c0c0;
-        }
-        
-        .rank-3 {
-            background: rgba(205, 127, 50, 0.1);
-            border-left: 3px solid #cd7f32;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #a0a0a0;
-            font-size: 1.2rem;
-        }
-        
-        .loading::after {
-            content: '';
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            margin-left: 10px;
-            border: 3px solid #f7b731;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .points-system {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 20px;
-            padding: 15px;
-            background: #1e2332;
-            border-radius: 8px;
-        }
-        
-        .points-item {
-            color: #a0a0a0;
-        }
-        
-        .points-item span {
-            color: #f7b731;
-            font-weight: bold;
-            margin-right: 5px;
-        }
-        
-        .filters {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .filter-select {
-            padding: 8px 16px;
-            background: #1e2332;
-            border: 1px solid #3a4050;
-            color: #fff;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        
-        .filter-select:hover {
-            border-color: #f7b731;
-        }
-        
-        .team-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .stat-card {
-            background: #1e2332;
-            border-radius: 8px;
-            padding: 15px;
-            border: 1px solid #3a4050;
-        }
-        
-        .stat-card h3 {
-            color: #f7b731;
-            margin-bottom: 15px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #3a4050;
-            font-size: 1.3rem;
-        }
-        
-        .stat-section {
-            margin-bottom: 15px;
-            padding: 10px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 6px;
-        }
-        
-        .stat-section-title {
-            color: #f7b731;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 6px;
-            padding: 4px 0;
-            border-bottom: 1px dashed #3a4050;
-        }
-        
-        .stat-label {
-            color: #a0a0a0;
-        }
-        
-        .stat-value {
-            color: #fff;
-            font-weight: 600;
-        }
-        
-        .players-list {
-            margin: 15px 0;
-            padding: 12px;
-            background: rgba(247, 183, 49, 0.1);
-            border-radius: 8px;
-            border-left: 3px solid #f7b731;
-        }
-        
-        .players-list-title {
-            color: #f7b731;
-            font-weight: 600;
-            margin-bottom: 10px;
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .players-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 8px;
-        }
-        
-        .player-item {
-            color: #fff;
-            font-size: 0.9rem;
-            padding: 4px 8px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 4px;
-            border: 1px solid #3a4050;
-        }
-        
-        .player-item:hover {
-            border-color: #f7b731;
-            background: rgba(247, 183, 49, 0.2);
+        :root {
+            --gold: #f7b731;
+            --gold-dim: #c9921a;
+            --gold-glow: rgba(247,183,49,0.18);
+            --bg: #0d0f1a;
+            --bg2: #141726;
+            --bg3: #1a1f30;
+            --bg4: #202538;
+            --border: #2a2f45;
+            --border-bright: #3a4060;
+            --text: #d4d8ec;
+            --text-dim: #7a80a0;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
+            --red: #e74c3c;
+            --green: #2ecc71;
+            --blue: #3498db;
+            --purple: #9b59b6;
+            --card-shadow: 0 8px 32px rgba(0,0,0,0.4);
         }
 
-        .last-update {
-            text-align: right;
-            color: #a0a0a0;
-            font-size: 0.8rem;
-            margin-top: 10px;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Exo 2', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        
+
+        /* ─── ANIMATED BACKGROUND ─── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 40% at 50% -10%, rgba(247,183,49,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 60% at 90% 60%, rgba(52,152,219,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse 30% 40% at 10% 80%, rgba(155,89,182,0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 0 20px 40px; position: relative; z-index: 1; }
+
+        /* ─── HEADER ─── */
+        .site-header {
+            padding: 28px 20px 20px;
+            position: relative;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 32px;
+        }
+        .site-header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+        .header-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .logo-block { display: flex; align-items: center; gap: 16px; }
+        .logo-icon {
+            width: 52px; height: 52px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px;
+            box-shadow: 0 4px 20px rgba(247,183,49,0.35);
+        }
+        .logo-text h1 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+            line-height: 1;
+        }
+        .logo-text p {
+            font-size: 0.78rem;
+            color: var(--gold);
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 3px;
+        }
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .live-badge {
+            display: flex; align-items: center; gap: 7px;
+            background: rgba(231,76,60,0.15);
+            border: 1px solid rgba(231,76,60,0.4);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--red);
+            letter-spacing: 1px;
+        }
+        .live-dot {
+            width: 7px; height: 7px;
+            background: var(--red);
+            border-radius: 50%;
+            animation: pulse 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+        .refresh-btn {
+            background: var(--bg3);
+            border: 1px solid var(--border-bright);
+            color: var(--text);
+            padding: 7px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex; align-items: center; gap: 7px;
+        }
+        .refresh-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .refresh-btn.spinning .btn-icon { animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .update-time { font-size: 0.75rem; color: var(--text-dim); }
+
+        /* ─── TOURNAMENT INFO CARDS ─── */
+        .tournament-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+        .t-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 18px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .t-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--gold), transparent);
+        }
+        .t-card:hover { border-color: var(--border-bright); }
+        .t-card-icon { font-size: 1.4rem; margin-bottom: 8px; }
+        .t-card-label { font-size: 0.72rem; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; }
+        .t-card-value { font-size: 1.35rem; font-weight: 800; color: var(--gold); font-family: 'Rajdhani', sans-serif; margin-top: 2px; }
+        .t-card-sub { font-size: 0.75rem; color: var(--text-dim); margin-top: 3px; }
+
+        /* ─── POINTS SYSTEM ─── */
+        .points-bar {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .points-bar-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+        .pts-chip {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            padding: 5px 11px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .pts-chip b { color: var(--gold); }
+        .pts-chip.kill-chip { border-color: rgba(231,76,60,0.3); }
+        .pts-chip.kill-chip b { color: var(--red); }
+
+        /* ─── TABS ─── */
+        .tabs-wrapper { margin-bottom: 20px; }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 5px;
+            width: fit-content;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 9px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            font-family: 'Exo 2', sans-serif;
+            letter-spacing: 0.3px;
+            display: flex; align-items: center; gap: 7px;
+        }
+        .tab-btn:hover { color: var(--text); background: var(--bg3); }
+        .tab-btn.active { background: var(--gold); color: #0d0f1a; }
+
+        /* ─── TAB CONTENT ─── */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+        /* ─── SECTION HEADER ─── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .section-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+            display: flex; align-items: center; gap: 9px;
+        }
+        .section-title .dot {
+            width: 8px; height: 8px;
+            background: var(--gold);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--gold);
+        }
+
+        /* ─── TABLE ─── */
+        .table-wrapper {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            overflow-x: auto;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        thead { position: sticky; top: 0; z-index: 2; }
+        th {
+            background: var(--bg3);
+            color: var(--text-dim);
+            padding: 13px 14px;
+            font-weight: 700;
+            text-align: left;
+            white-space: nowrap;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.15s;
+        }
+        th:hover { color: var(--gold); }
+        th.sort-asc::after { content: ' ↑'; color: var(--gold); }
+        th.sort-desc::after { content: ' ↓'; color: var(--gold); }
+        td {
+            padding: 11px 14px;
+            border-bottom: 1px solid rgba(42,47,69,0.6);
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background: rgba(247,183,49,0.04); }
+
+        .rank-cell {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        .rank-medal { display: inline-flex; align-items: center; gap: 6px; }
+
+        .row-rank-1 td { background: rgba(247,183,49,0.06); border-left: 3px solid var(--gold); }
+        .row-rank-2 td { background: rgba(192,192,192,0.05); border-left: 3px solid var(--silver); }
+        .row-rank-3 td { background: rgba(205,127,50,0.05); border-left: 3px solid var(--bronze); }
+
+        .pts-highlight { color: var(--gold); font-weight: 800; font-family: 'Rajdhani', sans-serif; font-size: 1rem; }
+        .kd-good { color: var(--green); font-weight: 700; }
+        .kd-bad { color: var(--red); font-weight: 700; }
+
+        /* ─── LOADING STATE ─── */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            gap: 16px;
+        }
+        .loader-ring {
+            width: 44px; height: 44px;
+            border: 3px solid var(--border);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        .loading-state p { color: var(--text-dim); font-size: 0.9rem; }
+
+        /* ─── CHART GRID ─── */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 20px;
+            margin-top: 24px;
+        }
+        .chart-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+        }
+        .chart-card h3 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+        .chart-card canvas { max-height: 260px; }
+
+        /* ─── TEAM CARDS ─── */
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 18px;
+        }
+        .team-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .team-card:hover { border-color: var(--border-bright); transform: translateY(-2px); }
+        .team-card-header {
+            padding: 16px 18px;
+            background: var(--bg3);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 12px;
+        }
+        .team-avatar {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #0d0f1a;
+            font-family: 'Rajdhani', sans-serif;
+            flex-shrink: 0;
+        }
+        .team-card-name {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .team-card-matches { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+        .team-card-body { padding: 16px 18px; }
+
+        .roster-section { margin-bottom: 14px; }
+        .roster-title { font-size: 0.7rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+        .roster-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .roster-chip {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .roster-chip:hover { border-color: var(--gold); color: var(--gold); }
+
+        .team-stats-mini {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .mini-stat {
+            background: var(--bg3);
+            border-radius: 8px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+        .mini-stat-val {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .mini-stat-label { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+
+        .team-details {
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            background: var(--bg3);
+            border-radius: 6px;
+            font-size: 0.78rem;
+        }
+        .detail-row span:first-child { color: var(--text-dim); }
+        .detail-row span:last-child { font-weight: 700; color: var(--text); }
+
+        /* ─── PLAYER MODAL ─── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(6px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+        .modal {
+            background: var(--bg2);
+            border: 1px solid var(--border-bright);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 620px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+        }
+        .modal-header {
+            padding: 24px 24px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: sticky; top: 0;
+            background: var(--bg2);
+            z-index: 1;
+        }
+        .modal-avatar {
+            width: 56px; height: 56px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            color: #0d0f1a;
+            font-weight: 800;
+            font-family: 'Rajdhani', sans-serif;
+            flex-shrink: 0;
+        }
+        .modal-player-name {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+        }
+        .modal-team-name { font-size: 0.82rem; color: var(--gold); margin-top: 5px; font-weight: 600; }
+        .modal-close {
+            margin-left: auto;
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .modal-close:hover { border-color: var(--red); color: var(--red); }
+        .modal-body { padding: 20px 24px 24px; }
+
+        .modal-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+        }
+        .kpi-val {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--gold);
+            line-height: 1;
+        }
+        .kpi-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+
+        .modal-section-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 10px;
+            margin-top: 18px;
+        }
+        .modal-stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .modal-stat-row {
+            background: var(--bg3);
+            border-radius: 8px;
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.83rem;
+        }
+        .modal-stat-row span:first-child { color: var(--text-dim); }
+        .modal-stat-row span:last-child { font-weight: 700; color: #fff; }
+
+        /* ─── SEARCH/FILTER ─── */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .search-input {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 9px 14px;
+            border-radius: 8px;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 0.85rem;
+            width: 220px;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus { outline: none; border-color: var(--gold); }
+        .filter-select {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 9px 14px;
+            border-radius: 8px;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .filter-select:focus { outline: none; border-color: var(--gold); }
+
+        /* ─── AUTOREFRESH COUNTER ─── */
+        .refresh-counter {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .refresh-progress {
+            width: 50px;
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .refresh-progress-bar {
+            height: 100%;
+            background: var(--gold);
+            border-radius: 2px;
+            transition: width 1s linear;
+        }
+
+        /* ─── EMPTY STATE ─── */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-dim);
+        }
+        .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .empty-state p { font-size: 0.9rem; }
+
+        /* ─── RESPONSIVE ─── */
         @media (max-width: 768px) {
-            h1 {
-                font-size: 1.8rem;
-            }
-            
-            .tab-btn {
-                padding: 8px 16px;
-                font-size: 0.9rem;
-            }
-            
-            td, th {
-                font-size: 0.8rem;
-                padding: 6px 4px;
-            }
-            
-            .team-stats {
-                grid-template-columns: 1fr;
-            }
-            
-            .players-grid {
-                grid-template-columns: 1fr;
-            }
+            .logo-text h1 { font-size: 1.5rem; }
+            .teams-grid { grid-template-columns: 1fr; }
+            .charts-grid { grid-template-columns: 1fr; }
+            .modal-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .modal-stat-grid { grid-template-columns: 1fr; }
+            .team-details { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🏆 PUBG СТУДЕНЧЕСКИЙ ТУРНИР 2026</h1>
-        
-        <div class="tournament-info">
-            <h2>Система очков</h2>
-            <div class="points-system">
-                <div class="points-item"><span>1 место:</span> 10 очков</div>
-                <div class="points-item"><span>2 место:</span> 6 очков</div>
-                <div class="points-item"><span>3 место:</span> 5 очков</div>
-                <div class="points-item"><span>4 место:</span> 4 очка</div>
-                <div class="points-item"><span>5 место:</span> 3 очка</div>
-                <div class="points-item"><span>6 место:</span> 2 очка</div>
-                <div class="points-item"><span>7-8 место:</span> 1 очко</div>
-                <div class="points-item"><span>9-16 место:</span> 0 очков</div>
-                <div class="points-item"><span>Фраг:</span> 1 очко</div>
-            </div>
-            
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label">Даты проведения</div>
-                    <div class="info-value" id="tournament-dates">14,15,21,22 Марта</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Количество команд</div>
-                    <div class="info-value" id="teams-count">16</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Карты</div>
-                    <div class="info-value">Эрангель, Таэго, Мирамар</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('main', event)">📊 ОСНОВНАЯ ТАБЛИЦА</button>
-            <button class="tab-btn" onclick="switchTab('teams', event)">👥 СТАТИСТИКА КОМАНД</button>
-            <button class="tab-btn" onclick="switchTab('players', event)">🎮 СТАТИСТИКА ИГРОКОВ</button>
-        </div>
-        
-        <!-- Основная таблица -->
-        <div id="main-tab" class="tab-content active">
-            <div class="loading" id="main-loading">Загрузка основной таблицы...</div>
-            <div id="main-table-container" style="display: none;"></div>
-        </div>
-        
-        <!-- Статистика команд -->
-        <div id="teams-tab" class="tab-content">
-            <div class="loading" id="teams-loading">Загрузка статистики команд...</div>
-            <div id="teams-container" style="display: none;"></div>
-        </div>
-        
-        <!-- Статистика игроков -->
-        <div id="players-tab" class="tab-content">
-            <div class="loading" id="players-loading">Загрузка статистики игроков...</div>
-            <div id="players-container" style="display: none;"></div>
-        </div>
 
-        <div class="last-update" id="last-update"></div>
+<!-- HEADER -->
+<header class="site-header">
+    <div class="header-inner">
+        <div class="logo-block">
+            <div class="logo-icon">🏆</div>
+            <div class="logo-text">
+                <h1>PUBG TOURNAMENT</h1>
+                <p>Студенческий Турнир 2026</p>
+            </div>
+        </div>
+        <div class="header-meta">
+            <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+            <div class="refresh-counter">
+                <span id="next-refresh">60с</span>
+                <div class="refresh-progress"><div class="refresh-progress-bar" id="progress-bar" style="width:100%"></div></div>
+            </div>
+            <button class="refresh-btn" onclick="manualRefresh()" id="refresh-btn">
+                <span class="btn-icon">⟳</span> Обновить
+            </button>
+            <div class="update-time" id="last-update">—</div>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- TOURNAMENT CARDS -->
+    <div class="tournament-cards">
+        <div class="t-card">
+            <div class="t-card-icon">📅</div>
+            <div class="t-card-label">Даты проведения</div>
+            <div class="t-card-value" style="font-size:1rem;">14,15,21,22 Марта</div>
+        </div>
+        <div class="t-card">
+            <div class="t-card-icon">👥</div>
+            <div class="t-card-label">Команд</div>
+            <div class="t-card-value">16</div>
+        </div>
+        <div class="t-card">
+            <div class="t-card-icon">🗺️</div>
+            <div class="t-card-label">Карты</div>
+            <div class="t-card-value" style="font-size:0.9rem;">Эрангель • Таэго • Мирамар</div>
+        </div>
+        <div class="t-card">
+            <div class="t-card-icon">🎯</div>
+            <div class="t-card-label">Матчей сыграно</div>
+            <div class="t-card-value" id="matches-played">—</div>
+        </div>
+        <div class="t-card">
+            <div class="t-card-icon">💀</div>
+            <div class="t-card-label">Всего килов</div>
+            <div class="t-card-value" id="total-kills">—</div>
+        </div>
     </div>
 
-    <script>
-        // Конфигурация Google Sheets
-        const CONFIG = {
-            SPREADSHEET_ID: '1jjpWcMFeoObXZYz43aPzBCE2fdWWG8kvC2QtqaYdKH8',
-            SHEETS: {
-                MAIN: 'ОСНОВНАЯ ТАБЛИЦА',
-                TEAMS: 'ТАБЛИЦА ПО КОМАНДАМ',
-                PLAYERS: 'ТАБЛИЦА ПО ИГРОКАМ'
-            }
-        };
+    <!-- POINTS SYSTEM -->
+    <div class="points-bar">
+        <span class="points-bar-label">Очки за место:</span>
+        <div class="pts-chip"><b>🥇 1</b> → 10</div>
+        <div class="pts-chip"><b>🥈 2</b> → 6</div>
+        <div class="pts-chip"><b>🥉 3</b> → 5</div>
+        <div class="pts-chip"><b>4</b> → 4</div>
+        <div class="pts-chip"><b>5</b> → 3</div>
+        <div class="pts-chip"><b>6</b> → 2</div>
+        <div class="pts-chip"><b>7–8</b> → 1</div>
+        <div class="pts-chip"><b>9–16</b> → 0</div>
+        <div class="pts-chip kill-chip"><b>☠️ Фраг</b> = 1 очко</div>
+    </div>
 
-        // Функция для нормализации названий команд
-        function normalizeTeamName(name) {
-            if (!name) return '';
-            return name.replace(/['`´’]/g, "'").trim();
+    <!-- TABS -->
+    <div class="tabs-wrapper">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('main',event)">📊 Основная таблица</button>
+            <button class="tab-btn" onclick="switchTab('charts',event)">📈 Графики</button>
+            <button class="tab-btn" onclick="switchTab('teams',event)">🛡️ Команды</button>
+            <button class="tab-btn" onclick="switchTab('players',event)">🎮 Игроки</button>
+        </div>
+    </div>
+
+    <!-- TAB: MAIN TABLE -->
+    <div id="main-tab" class="tab-content active">
+        <div class="section-header">
+            <div class="section-title"><div class="dot"></div> Турнирная таблица</div>
+        </div>
+        <div id="main-loading" class="loading-state">
+            <div class="loader-ring"></div><p>Загрузка данных...</p>
+        </div>
+        <div id="main-table-container" style="display:none;"></div>
+    </div>
+
+    <!-- TAB: CHARTS -->
+    <div id="charts-tab" class="tab-content">
+        <div class="section-header">
+            <div class="section-title"><div class="dot"></div> Статистика и графики</div>
+        </div>
+        <div id="charts-loading" class="loading-state">
+            <div class="loader-ring"></div><p>Загрузка данных...</p>
+        </div>
+        <div id="charts-container" style="display:none;">
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>🏆 Топ-8 — Всего очков</h3>
+                    <canvas id="chart-points"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>☠️ Топ-8 — Киллы</h3>
+                    <canvas id="chart-kills"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>📍 Очки за места vs Киллы</h3>
+                    <canvas id="chart-scatter"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>💥 Урон по командам (топ-8)</h3>
+                    <canvas id="chart-damage"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: TEAMS -->
+    <div id="teams-tab" class="tab-content">
+        <div class="section-header">
+            <div class="section-title"><div class="dot"></div> Статистика команд</div>
+            <div class="filter-bar">
+                <input class="search-input" type="text" placeholder="🔍 Поиск команды..." id="team-search" oninput="filterTeams()">
+            </div>
+        </div>
+        <div id="teams-loading" class="loading-state">
+            <div class="loader-ring"></div><p>Загрузка данных...</p>
+        </div>
+        <div id="teams-container" style="display:none;"></div>
+    </div>
+
+    <!-- TAB: PLAYERS -->
+    <div id="players-tab" class="tab-content">
+        <div class="section-header">
+            <div class="section-title"><div class="dot"></div> Статистика игроков</div>
+            <div class="filter-bar">
+                <input class="search-input" type="text" placeholder="🔍 Поиск игрока..." id="player-search" oninput="filterPlayers()">
+                <select class="filter-select" id="player-team-filter" onchange="filterPlayers()">
+                    <option value="">Все команды</option>
+                </select>
+                <select class="filter-select" id="player-sort" onchange="filterPlayers()">
+                    <option value="kd">Сорт: K/D</option>
+                    <option value="kills">Сорт: Киллы</option>
+                    <option value="damage">Сорт: Урон</option>
+                    <option value="kda">Сорт: KDA</option>
+                </select>
+            </div>
+        </div>
+        <div id="players-loading" class="loading-state">
+            <div class="loader-ring"></div><p>Загрузка данных...</p>
+        </div>
+        <div id="players-table-container" style="display:none;"></div>
+    </div>
+
+</div><!-- /container -->
+
+<!-- PLAYER MODAL -->
+<div class="modal-overlay" id="player-modal" onclick="closeModal(event)">
+    <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────
+const CONFIG = {
+    SPREADSHEET_ID: '1jjpWcMFeoObXZYz43aPzBCE2fdWWG8kvC2QtqaYdKH8',
+    SHEETS: {
+        MAIN:    'ОСНОВНАЯ ТАБЛИЦА',
+        TEAMS:   'ТАБЛИЦА ПО КОМАНДАМ',
+        PLAYERS: 'ТАБЛИЦА ПО ИГРОКАМ'
+    },
+    AUTO_REFRESH_SEC: 60
+};
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let allMainData    = [];
+let allTeamsData   = [];
+let allPlayersData = [];
+let teamPlayersMap = {};
+let chartInstances = {};
+let refreshTimer   = null;
+let refreshCountdown = CONFIG.AUTO_REFRESH_SEC;
+let mainSortCol    = null;
+let mainSortDir    = 'asc';
+let playersSortCol = 'kd';
+let playersSortDir = 'desc';
+
+// ─────────────────────────────────────────────
+// CSV PARSER
+// ─────────────────────────────────────────────
+function parseCSV(text) {
+    const lines = [];
+    let cur = [], field = '', inQ = false;
+    for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (inQ) {
+            if (c === '"' && text[i+1] === '"') { field += '"'; i++; }
+            else if (c === '"') inQ = false;
+            else field += c;
+        } else {
+            if (c === '"') inQ = true;
+            else if (c === ',') { cur.push(field.trim()); field = ''; }
+            else if (c === '\n') { cur.push(field.trim()); lines.push(cur); cur = []; field = ''; }
+            else if (c !== '\r') field += c;
         }
+    }
+    if (field || cur.length) { cur.push(field.trim()); lines.push(cur); }
+    return lines.filter(r => r.some(f => f !== ''));
+}
 
-        // Парсер CSV (с обработкой кавычек)
-        function parseCSV(csvText) {
-            if (!csvText || csvText.trim() === '') return [];
-            
-            const lines = [];
-            let currentLine = [];
-            let currentField = '';
-            let inQuotes = false;
-            
-            for (let i = 0; i < csvText.length; i++) {
-                const char = csvText[i];
-                
-                if (char === '"' && !inQuotes) {
-                    inQuotes = true;
-                } else if (char === '"' && inQuotes && csvText[i + 1] === '"') {
-                    currentField += '"';
-                    i++;
-                } else if (char === '"' && inQuotes) {
-                    inQuotes = false;
-                } else if (char === ',' && !inQuotes) {
-                    currentLine.push(currentField);
-                    currentField = '';
-                } else if (char === '\n' && !inQuotes) {
-                    currentLine.push(currentField);
-                    lines.push(currentLine);
-                    currentLine = [];
-                    currentField = '';
-                } else {
-                    currentField += char;
-                }
-            }
-            
-            if (currentField || currentLine.length > 0) {
-                currentLine.push(currentField);
-                lines.push(currentLine);
-            }
-            
-            if (lines.length === 0) return [];
-            
-            // Используем предопределённые заголовки для всех листов (из структуры Excel)
-            // Для листа PLAYERS
-            const playerHeaders = [
-                'Player', 'Team', 'Number of Matches', 'Kills', 'Death', 'Assists', 'KDA', 'KD', 'KAS',
-                'Knocks', 'Kills/Knocks', 'Damage Dealt', 'Revives', 'Headshot Kills', 'Longest Kill (m)',
-                'Swimming Distance (km)', 'Walk Distance (km)', 'Ride Distance (km)', 'Time Survived'
-            ];
-            
-            // Для листа TEAMS (можно определить по наличию поля Team, но для простоты используем фиксированные)
-            const teamHeaders = [
-                'Team', 'Players', 'Number Of Matches', 'WWCD', 'Kills', 'Assists', 'Damage Dealt',
-                'Knocks', 'Revives', 'Headshot Kills', 'Swimming Distance (km)', 'Walk Distance (km)',
-                'Ride Distance (km)', 'Time Survived', 'Heals', 'Boosts', 'Vehicle Destroys'
-            ];
-            
-            // Для листа MAIN
-            const mainHeaders = ['Rank', 'Team', 'Matches', 'Place Pts', 'Kills', 'Total Points'];
-            
-            // Определяем, какой лист по контексту (здесь мы не знаем, но можем определить по количеству столбцов)
-            // Вместо этого будем использовать универсальный подход: просто пронумеруем столбцы и создадим объект с индексами
-            const data = [];
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                if (line.length === 0 || line.every(f => f.trim() === '')) continue;
-                
-                // Создаём объект с индексами в качестве ключей (для дальнейшей обработки)
-                const row = {};
-                line.forEach((value, index) => {
-                    row[index] = value.replace(/^"|"$/g, '').trim();
-                });
-                data.push(row);
-            }
-            return data;
-        }
+async function fetchSheet(name) {
+    try {
+        const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}`;
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(r.status);
+        return parseCSV(await r.text());
+    } catch(e) {
+        console.error('fetchSheet error:', name, e);
+        return [];
+    }
+}
 
-        // Функция для получения данных из Google Sheets
-        async function fetchSheetData(sheetName) {
-            try {
-                const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-                
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const csvText = await response.text();
-                return parseCSV(csvText);
-                
-            } catch (error) {
-                console.error('Ошибка загрузки:', error);
-                return [];
-            }
-        }
+function n(v) { return parseFloat(String(v || '0').replace(',', '.')) || 0; }
+function normalizeTeam(s) { return (s || '').replace(/['`´']/g, "'").trim(); }
+function initials(name) { return (name || '?').slice(0,2).toUpperCase(); }
 
-        // Обновить время последнего обновления
-        function updateLastUpdateTime() {
-            const now = new Date();
-            const formattedTime = now.toLocaleString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            document.getElementById('last-update').textContent = `Последнее обновление: ${formattedTime}`;
-        }
+// ─────────────────────────────────────────────
+// LOAD ALL DATA
+// ─────────────────────────────────────────────
+async function loadAllData() {
+    const [mainRaw, teamsRaw, playersRaw] = await Promise.all([
+        fetchSheet(CONFIG.SHEETS.MAIN),
+        fetchSheet(CONFIG.SHEETS.TEAMS),
+        fetchSheet(CONFIG.SHEETS.PLAYERS)
+    ]);
 
-        // Загрузка основной таблицы
-    async function loadMainTable() {
-        const loadingEl = document.getElementById('main-loading');
-        const containerEl = document.getElementById('main-table-container');
+    // MAIN
+    allMainData = mainRaw.map(r => ({
+        Rank: r[0]||'', Team: r[1]||'', Matches: r[2]||'0',
+        PlacePts: r[3]||'0', Kills: r[4]||'0', TotalPoints: r[5]||'0'
+    })).filter(r => !isNaN(parseFloat(r.Rank)) && r.Team && r.Team !== 'Team')
+      .sort((a,b) => n(a.Rank) - n(b.Rank));
 
-        loadingEl.style.display = 'block';
-        containerEl.style.display = 'none';
+    // PLAYERS
+    allPlayersData = playersRaw.map(r => ({
+        Player: (r[0]||'').replace(/^Player\s+/i,'').trim(),
+        Team:   (r[1]||'').replace(/^Team\s+/i,'').trim(),
+        Matches: r[2]||'0', Kills: r[3]||'0', Deaths: r[4]||'1',
+        Assists: r[5]||'0', KDA: r[6]||'', KD: r[7]||'', KAS: r[8]||'',
+        Knocks: r[9]||'0', DamageDealt: r[11]||'0', Revives: r[12]||'0',
+        HeadshotKills: r[13]||'0', LongestKill: r[14]||'0',
+        TimeSurvived: r[18]||'0'
+    })).filter(p => p.Player && p.Player !== 'Player' && n(p.Matches) > 0);
 
-        const data = await fetchSheetData(CONFIG.SHEETS.MAIN);
+    // TEAMS
+    allTeamsData = teamsRaw.map(r => ({
+        Team: r[0]||'', Matches: r[2]||'0', WWCD: r[3]||'0',
+        Kills: r[4]||'0', Assists: r[5]||'0', DamageDealt: r[6]||'0',
+        Knocks: r[7]||'0', Revives: r[8]||'0', HeadshotKills: r[9]||'0',
+        TimeSurvived: r[13]||'0', Heals: r[14]||'0', Boosts: r[15]||'0',
+        VehicleDestroys: r[16]||'0'
+    })).filter(t => t.Team && t.Team !== 'Team');
 
-        if (data.length === 0) {
-            loadingEl.style.display = 'none';
-            containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Нет данных для отображения</p>';
-            containerEl.style.display = 'block';
-            return;
-        }
+    // Build team→players map
+    teamPlayersMap = {};
+    allPlayersData.forEach(p => {
+        const k = normalizeTeam(p.Team);
+        if (!teamPlayersMap[k]) teamPlayersMap[k] = [];
+        if (!teamPlayersMap[k].includes(p.Player)) teamPlayersMap[k].push(p.Player);
+    });
 
-        // Преобразуем в объекты с полями
-        const rows = data.map(row => ({
-            Rank: row[0] || '',
-            Team: row[1] || '',
-            Matches: row[2] || '',
-            PlacePts: row[3] || '',
-            Kills: row[4] || '',
-            TotalPoints: row[5] || ''
-        }));
+    // Global stats
+    const totalKills = allMainData.reduce((s,r) => s + n(r.Kills), 0);
+    const maxMatches = Math.max(...allMainData.map(r => n(r.Matches)), 0);
+    document.getElementById('total-kills').textContent = totalKills || '—';
+    document.getElementById('matches-played').textContent = maxMatches || '—';
 
-        // Фильтруем: оставляем только строки, где Rank — число, а Team не равна 'Team'
-        const validRows = rows.filter(row => {
-            const rankNum = parseFloat(row.Rank);
-            if (isNaN(rankNum)) return false;               // убираем нечисловые ранги (например, '#17')
-            if (row.Team === 'Team' || row.Team.trim() === '') return false; // убираем заголовки и пустые команды
-            return true;
-        });
+    updateLastUpdateTime();
+}
 
-        // Сортируем по рангу
-        validRows.sort((a, b) => {
-            const rankA = parseFloat(a.Rank) || 999;
-            const rankB = parseFloat(b.Rank) || 999;
-            return rankA - rankB;
-        });
+// ─────────────────────────────────────────────
+// RENDER MAIN TABLE
+// ─────────────────────────────────────────────
+function renderMainTable() {
+    const loading = document.getElementById('main-loading');
+    const cont    = document.getElementById('main-table-container');
 
-        let html = '<table><thead><tr>';
-        html += '<th>Ранг</th><th>Команда</th><th>Матчи</th><th>Очки за места</th><th>Киллы</th><th>Всего очков</th>';
-        html += '</tr></thead><tbody>';
-        
-        validRows.forEach((row, index) => {
-            const rank = parseFloat(row.Rank) || index + 1;
-            const rankClass = index < 3 ? ` rank-${index + 1}` : '';
-
-            html += `<tr class="${rankClass}">`;
-            html += `<td><strong>#${rank}</strong></td>`;
-            html += `<td>${row.Team || '-'}</td>`;
-            html += `<td>${row.Matches || '0'}</td>`;
-            html += `<td>${row.PlacePts || '0'}</td>`;
-            html += `<td>${row.Kills || '0'}</td>`;
-            html += `<td><strong style="color: #f7b731;">${row.TotalPoints || '0'}</strong></td>`;
-            html += '</tr>';
-        });
-
-        html += '</tbody></table>';
-
-        containerEl.innerHTML = html;
-        loadingEl.style.display = 'none';
-        containerEl.style.display = 'block';
-        updateLastUpdateTime();
+    if (allMainData.length === 0) {
+        loading.style.display = 'flex';
+        cont.style.display = 'none';
+        cont.innerHTML = '';
+        return;
     }
 
-        // Загрузка статистики команд
-        async function loadTeamsStats() {
-            const loadingEl = document.getElementById('teams-loading');
-            const containerEl = document.getElementById('teams-container');
-            
-            loadingEl.style.display = 'block';
-            containerEl.style.display = 'none';
-            
-            const [teamsData, playersData] = await Promise.all([
-                fetchSheetData(CONFIG.SHEETS.TEAMS),
-                fetchSheetData(CONFIG.SHEETS.PLAYERS)
-            ]);
-            
-            if (teamsData.length === 0) {
-                loadingEl.style.display = 'none';
-                containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">Нет данных для отображения</p>';
-                containerEl.style.display = 'block';
-                return;
-            }
-            
-            // Преобразуем teamsData в объекты с полями
-            const teams = teamsData.map(row => ({
-                Team: row[0] || '',
-                Players: row[1] || '',
-                NumberOfMatches: row[2] || '',
-                WWCD: row[3] || '',
-                Kills: row[4] || '',
-                Assists: row[5] || '',
-                DamageDealt: row[6] || '',
-                Knocks: row[7] || '',
-                Revives: row[8] || '',
-                HeadshotKills: row[9] || '',
-                SwimmingDistance: row[10] || '',
-                WalkDistance: row[11] || '',
-                RideDistance: row[12] || '',
-                TimeSurvived: row[13] || '',
-                Heals: row[14] || '',
-                Boosts: row[15] || '',
-                VehicleDestroys: row[16] || ''
-            }));
-            
-            // Группируем игроков по командам из playersData
-            const teamPlayers = {};
-            playersData.forEach(row => {
-                const playerName = row[0] ? row[0].replace(/^Player\s+/i, '').trim() : '';
-                const teamName = row[1] ? row[1].replace(/^Team\s+/i, '').trim() : '';
-                if (playerName && teamName && playerName !== 'Player') {
-                    const normalizedTeam = normalizeTeamName(teamName);
-                    if (!teamPlayers[normalizedTeam]) {
-                        teamPlayers[normalizedTeam] = [];
-                    }
-                    teamPlayers[normalizedTeam].push(playerName);
-                }
-            });
-            
-            let html = '<div class="team-stats">';
-            
-            teams.forEach(team => {
-                if (!team.Team || team.Team === 'Team') return;
-                
-                const teamName = team.Team;
-                const normalizedTeamName = normalizeTeamName(teamName);
-                
-                html += '<div class="stat-card">';
-                html += `<h3>🏆 ${teamName}</h3>`;
-                
-                if (teamPlayers[normalizedTeamName] && teamPlayers[normalizedTeamName].length > 0) {
-                    html += '<div class="players-list">';
-                    html += '<div class="players-list-title">👥 Состав команды</div>';
-                    html += '<div class="players-grid">';
-                    teamPlayers[normalizedTeamName].forEach(player => {
-                        html += `<div class="player-item">🎮 ${player}</div>`;
-                    });
-                    html += '</div></div>';
-                }
-                
-                html += '<div class="stat-section">';
-                html += '<div class="stat-section-title">📊 Основная статистика</div>';
-                const mainStats = [
-                    {label: 'Матчи', value: team.NumberOfMatches},
-                    {label: 'WWCD (победы)', value: team.WWCD},
-                    {label: 'Киллы', value: team.Kills},
-                    {label: 'Ассисты', value: team.Assists}
-                ];
-                mainStats.forEach(stat => {
-                    if (stat.value && stat.value !== '0' && stat.value !== '') {
-                        html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
-                    }
-                });
-                html += '</div>';
-                
-                html += '<div class="stat-section">';
-                html += '<div class="stat-section-title">⚔️ Боевая статистика</div>';
-                const combatStats = [
-                    {label: 'Урон нанесенный', value: team.DamageDealt},
-                    {label: 'Нокауты', value: team.Knocks},
-                    {label: 'Реанимации', value: team.Revives},
-                    {label: 'Хедшоты', value: team.HeadshotKills},
-                    {label: 'Уничтожено транспорта', value: team.VehicleDestroys}
-                ];
-                combatStats.forEach(stat => {
-                    if (stat.value && stat.value !== '0' && stat.value !== '') {
-                        html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
-                    }
-                });
-                html += '</div>';
-                
-                html += '<div class="stat-section">';
-                html += '<div class="stat-section-title">💊 Медицина</div>';
-                const medicStats = [
-                    {label: 'Аптечки', value: team.Heals},
-                    {label: 'Бусты', value: team.Boosts}
-                ];
-                medicStats.forEach(stat => {
-                    if (stat.value && stat.value !== '0' && stat.value !== '') {
-                        html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
-                    }
-                });
-                html += '</div>';
-                
-                html += '<div class="stat-section">';
-                html += '<div class="stat-section-title">🏃 Перемещение</div>';
-                const movementStats = [
-                    {label: 'Время выживания', value: team.TimeSurvived},
-                    {label: 'Дистанция (плавание)', value: team.SwimmingDistance ? team.SwimmingDistance + ' км' : ''},
-                    {label: 'Дистанция (пешком)', value: team.WalkDistance ? team.WalkDistance + ' км' : ''},
-                    {label: 'Дистанция (транспорт)', value: team.RideDistance ? team.RideDistance + ' км' : ''}
-                ];
-                movementStats.forEach(stat => {
-                    if (stat.value && stat.value !== '0' && stat.value !== '') {
-                        html += `<div class="stat-row"><span class="stat-label">${stat.label}:</span><span class="stat-value">${stat.value}</span></div>`;
-                    }
-                });
-                html += '</div>';
-                
-                html += '</div>';
-            });
-            
-            html += '</div>';
-            
-            containerEl.innerHTML = html;
-            loadingEl.style.display = 'none';
-            containerEl.style.display = 'block';
-            updateLastUpdateTime();
-        }
-
-    // Загрузка статистики игроков
-    async function loadPlayersStats() {
-        const loadingEl = document.getElementById('players-loading');
-        const containerEl = document.getElementById('players-container');
-
-        loadingEl.style.display = 'block';
-        containerEl.style.display = 'none';
-
-        console.log('🚀 Начинаем загрузку статистики игроков...');
-
-        const data = await fetchSheetData(CONFIG.SHEETS.PLAYERS);
-
-        console.log('📊 ПОЛУЧЕННЫЕ ДАННЫЕ (первые 10 строк):', data.slice(0, 10));
-        console.log('📊 ВСЕГО СТРОК:', data.length);
-
-        if (data.length === 0) {
-            console.error('❌ Данные не загрузились!');
-            loadingEl.style.display = 'none';
-            containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Ошибка загрузки данных.</p>';
-            containerEl.style.display = 'block';
-            return;
-        }
-
-        // Преобразуем в объекты с именами полей (используем порядок столбцов из структуры)
-        const players = data.map(row => ({
-            Player: row[0] ? row[0].replace(/^Player\s+/i, '').trim() : '',
-            Team: row[1] ? row[1].replace(/^Team\s+/i, '').trim() : '',
-            NumberOfMatches: row[2] || '0',
-            Kills: row[3] || '0',
-            Death: row[4] || '1',
-            Assists: row[5] || '0',
-            KDA: row[6] || '',
-            KD: row[7] || '',
-            KAS: row[8] || '',
-            Knocks: row[9] || '0',
-            KillsKnocks: row[10] || '',
-            DamageDealt: row[11] || '0',
-            Revives: row[12] || '0',
-            HeadshotKills: row[13] || '0',
-            LongestKill: row[14] || '0',
-            SwimmingDistance: row[15] || '',
-            WalkDistance: row[16] || '',
-            RideDistance: row[17] || '',
-            TimeSurvived: row[18] || '0'
-        }));
-
-        console.log('🔑 Пример первой строки после обработки:', players[0]);
-
-        // Фильтруем только строки с реальными игроками и у которых есть матчи
-        const validPlayers = players.filter(p => {
-            // Имя не пустое и не заголовок
-            if (!p.Player || p.Player === 'Player' || p.Player.trim() === '') return false;
-
-            // Проверяем, что количество матчей > 0 (игрок участвовал)
-            const matches = parseFloat(String(p.NumberOfMatches).replace(',', '.')) || 0;
-            return matches > 0;
+    let rows = [...allMainData];
+    if (mainSortCol) {
+        rows.sort((a,b) => {
+            let av = n(a[mainSortCol]), bv = n(b[mainSortCol]);
+            return mainSortDir === 'asc' ? av - bv : bv - av;
         });
-
-        console.log('👥 Количество валидных игроков (сыгравших):', validPlayers.length);
-
-        if (validPlayers.length === 0) {
-            console.warn('❌ Нет валидных игроков с сыгранными матчами.');
-            loadingEl.style.display = 'none';
-            containerEl.innerHTML = '<p style="text-align: center; padding: 20px;">❌ Нет данных об игроках.</p>';
-            containerEl.style.display = 'block';
-            return;
-        }
-
-        // Строим таблицу
-        let html = '<table><thead><tr>';
-        html += '<th>Игрок</th><th>Команда</th><th>Матчи</th><th>K/D</th><th>KDA</th><th>KAS</th><th>Киллы</th><th>Смерти</th><th>Ассисты</th><th>Нокауты</th><th>Урон</th><th>Реанимации</th><th>Хедшоты</th><th>Longest Kill</th><th>Время выживания</th>';
-        html += '</tr></thead><tbody>';
-        
-        validPlayers.forEach(p => {
-            const kills = parseFloat(String(p.Kills).replace(',', '.')) || 0;
-            const deaths = parseFloat(String(p.Death).replace(',', '.')) || 1;
-            const assists = parseFloat(String(p.Assists).replace(',', '.')) || 0;
-            const matches = parseFloat(String(p.NumberOfMatches).replace(',', '.')) || 0;
-            const knocks = parseFloat(String(p.Knocks).replace(',', '.')) || 0;
-            const damage = parseFloat(String(p.DamageDealt).replace(',', '.')) || 0;
-            const revives = parseFloat(String(p.Revives).replace(',', '.')) || 0;
-            const headshots = parseFloat(String(p.HeadshotKills).replace(',', '.')) || 0;
-            const longestKill = parseFloat(String(p.LongestKill).replace(',', '.')) || 0;
-            const timeSurvived = parseFloat(String(p.TimeSurvived).replace(',', '.')) || 0;
-
-            let kd = p.KD ? parseFloat(String(p.KD).replace(',', '.')) : (deaths > 0 ? kills / deaths : kills);
-            let kda = p.KDA ? parseFloat(String(p.KDA).replace(',', '.')) : (deaths > 0 ? (kills + assists) / deaths : kills + assists);
-            let kas = p.KAS ? parseFloat(String(p.KAS).replace(',', '.')) : 0;
-
-            kd = kd.toFixed(2);
-            kda = kda.toFixed(2);
-            if (kas) kas = kas.toFixed(2);
-
-            html += '<tr>';
-            html += `<td><strong>${p.Player}</strong></td>`;
-            html += `<td>${p.Team || '-'}</td>`;
-            html += `<td>${matches}</td>`;
-            html += `<td>${kd}</td>`;
-            html += `<td>${kda}</td>`;
-            html += `<td>${kas}</td>`;
-            html += `<td>${kills}</td>`;
-            html += `<td>${deaths}</td>`;
-            html += `<td>${assists}</td>`;
-            html += `<td>${knocks}</td>`;
-            html += `<td>${damage}</td>`;
-            html += `<td>${revives}</td>`;
-            html += `<td>${headshots}</td>`;
-            html += `<td>${longestKill}м</td>`;
-            html += `<td>${timeSurvived}</td>`;
-            html += '</tr>';
-        });
-
-        html += '</tbody></table>';
-
-        containerEl.innerHTML = html;
-        loadingEl.style.display = 'none';
-        containerEl.style.display = 'block';
-        updateLastUpdateTime();
-
-        console.log('✅ Таблица игроков успешно отрисована.');
     }
 
-        // Переключение вкладок
-        function switchTab(tabName, event) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.getElementById(`${tabName}-tab`).classList.add('active');
-            
-            switch(tabName) {
-                case 'main':
-                    loadMainTable();
-                    break;
-                case 'teams':
-                    loadTeamsStats();
-                    break;
-                case 'players':
-                    loadPlayersStats();
-                    break;
+    const cols = [
+        { key:'Rank', label:'#', sortable:true },
+        { key:'Team', label:'Команда', sortable:false },
+        { key:'Matches', label:'Матчи', sortable:true },
+        { key:'PlacePts', label:'Очки за места', sortable:true },
+        { key:'Kills', label:'Киллы', sortable:true },
+        { key:'TotalPoints', label:'Всего очков', sortable:true },
+    ];
+
+    let html = `<div class="table-wrapper"><table><thead><tr>`;
+    cols.forEach(c => {
+        let cls = '';
+        if (c.sortable && mainSortCol === c.key) cls = mainSortDir === 'asc' ? 'sort-asc' : 'sort-desc';
+        html += `<th class="${cls}" ${c.sortable ? `onclick="sortMain('${c.key}')"` : ''}>${c.label}</th>`;
+    });
+    html += `</tr></thead><tbody>`;
+
+    rows.forEach((r, i) => {
+        const rank = n(r.Rank);
+        let rowClass = '';
+        let rankDisp = `#${rank}`;
+        if (rank === 1) { rowClass = 'row-rank-1'; rankDisp = '🥇'; }
+        else if (rank === 2) { rowClass = 'row-rank-2'; rankDisp = '🥈'; }
+        else if (rank === 3) { rowClass = 'row-rank-3'; rankDisp = '🥉'; }
+
+        html += `<tr class="${rowClass}">
+            <td><span class="rank-cell">${rankDisp} ${rank > 3 ? '' : ''}</span></td>
+            <td><strong>${r.Team||'—'}</strong></td>
+            <td>${n(r.Matches)}</td>
+            <td>${n(r.PlacePts)}</td>
+            <td>${n(r.Kills)}</td>
+            <td><span class="pts-highlight">${n(r.TotalPoints)}</span></td>
+        </tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    cont.innerHTML = html;
+    loading.style.display = 'none';
+    cont.style.display = 'block';
+}
+
+function sortMain(col) {
+    if (mainSortCol === col) mainSortDir = mainSortDir === 'asc' ? 'desc' : 'asc';
+    else { mainSortCol = col; mainSortDir = col === 'Rank' ? 'asc' : 'desc'; }
+    renderMainTable();
+}
+
+// ─────────────────────────────────────────────
+// RENDER CHARTS
+// ─────────────────────────────────────────────
+function renderCharts() {
+    const loading = document.getElementById('charts-loading');
+    const cont    = document.getElementById('charts-container');
+
+    if (allMainData.length === 0 && allTeamsData.length === 0) {
+        loading.style.display = 'flex'; cont.style.display = 'none'; return;
+    }
+    loading.style.display = 'none';
+    cont.style.display = 'block';
+
+    const top8Main = [...allMainData].slice(0, 8);
+    const top8Teams = [...allTeamsData].slice(0, 8);
+
+    const chartDefs = chartInstances;
+    if (chartDefs['points']) { chartDefs['points'].destroy(); }
+    if (chartDefs['kills'])  { chartDefs['kills'].destroy(); }
+    if (chartDefs['scatter'])  { chartDefs['scatter'].destroy(); }
+    if (chartDefs['damage'])  { chartDefs['damage'].destroy(); }
+
+    const goldPalette = [
+        '#f7b731','#e8a520','#d4941a','#c08315','#f7c74e',
+        '#ffd966','#e0a030','#c88818'
+    ];
+    const defaultFont = { family: "'Exo 2', sans-serif", size: 11 };
+    const gridColor = 'rgba(42,47,69,0.8)';
+    const textColor = '#7a80a0';
+
+    // POINTS
+    chartInstances['points'] = new Chart(document.getElementById('chart-points'), {
+        type: 'bar',
+        data: {
+            labels: top8Main.map(r => r.Team),
+            datasets: [{ data: top8Main.map(r => n(r.TotalPoints)), backgroundColor: goldPalette, borderRadius: 6, borderSkipped: false }]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { color: textColor, font: defaultFont } },
+                y: { grid: { display: false }, ticks: { color: '#d4d8ec', font: { ...defaultFont, weight: '600' } } }
             }
         }
+    });
 
-        // Инициализация при загрузке страницы
-        window.onload = async function() {
-            console.log('Страница загружена');
-            await loadMainTable();
-            await loadTeamsStats();
-            await loadPlayersStats();
-        };
-    </script>
+    // KILLS
+    chartInstances['kills'] = new Chart(document.getElementById('chart-kills'), {
+        type: 'bar',
+        data: {
+            labels: top8Main.map(r => r.Team),
+            datasets: [{ data: top8Main.map(r => n(r.Kills)), backgroundColor: 'rgba(231,76,60,0.75)', borderRadius: 6, borderSkipped: false }]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { color: textColor, font: defaultFont } },
+                y: { grid: { display: false }, ticks: { color: '#d4d8ec', font: { ...defaultFont, weight: '600' } } }
+            }
+        }
+    });
+
+    // SCATTER
+    chartInstances['scatter'] = new Chart(document.getElementById('chart-scatter'), {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Команды',
+                data: top8Main.map(r => ({ x: n(r.PlacePts), y: n(r.Kills), label: r.Team })),
+                backgroundColor: '#f7b731',
+                pointRadius: 8,
+                pointHoverRadius: 11
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `${ctx.raw.label}: PlacePts=${ctx.raw.x}, Kills=${ctx.raw.y}`
+                    }
+                }
+            },
+            scales: {
+                x: { title: { display: true, text: 'Очки за места', color: textColor, font: defaultFont }, grid: { color: gridColor }, ticks: { color: textColor, font: defaultFont } },
+                y: { title: { display: true, text: 'Киллы', color: textColor, font: defaultFont }, grid: { color: gridColor }, ticks: { color: textColor, font: defaultFont } }
+            }
+        }
+    });
+
+    // DAMAGE
+    const damageTeams = [...allTeamsData].sort((a,b) => n(b.DamageDealt) - n(a.DamageDealt)).slice(0,8);
+    chartInstances['damage'] = new Chart(document.getElementById('chart-damage'), {
+        type: 'bar',
+        data: {
+            labels: damageTeams.map(t => t.Team),
+            datasets: [{ data: damageTeams.map(t => Math.round(n(t.DamageDealt))), backgroundColor: 'rgba(52,152,219,0.75)', borderRadius: 6, borderSkipped: false }]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { color: textColor, font: defaultFont } },
+                y: { grid: { display: false }, ticks: { color: '#d4d8ec', font: { ...defaultFont, weight: '600' } } }
+            }
+        }
+    });
+
+    Chart.defaults.color = textColor;
+    Chart.defaults.font = defaultFont;
+}
+
+// ─────────────────────────────────────────────
+// RENDER TEAMS
+// ─────────────────────────────────────────────
+function renderTeams(query = '') {
+    const loading = document.getElementById('teams-loading');
+    const cont    = document.getElementById('teams-container');
+
+    if (allTeamsData.length === 0) {
+        loading.style.display = 'flex'; cont.style.display = 'none'; return;
+    }
+
+    const q = query.toLowerCase();
+    const filtered = q ? allTeamsData.filter(t => t.Team.toLowerCase().includes(q)) : allTeamsData;
+
+    if (filtered.length === 0) {
+        loading.style.display = 'none';
+        cont.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>Команда не найдена</p></div>`;
+        cont.style.display = 'block'; return;
+    }
+
+    let html = '<div class="teams-grid">';
+    filtered.forEach(t => {
+        const normName = normalizeTeam(t.Team);
+        const players  = teamPlayersMap[normName] || [];
+        const kpg = n(t.Matches) > 0 ? (n(t.Kills)/n(t.Matches)).toFixed(1) : '—';
+        const dpg = n(t.Matches) > 0 ? Math.round(n(t.DamageDealt)/n(t.Matches)) : '—';
+
+        html += `<div class="team-card">
+            <div class="team-card-header">
+                <div class="team-avatar">${initials(t.Team)}</div>
+                <div>
+                    <div class="team-card-name">${t.Team}</div>
+                    <div class="team-card-matches">${n(t.Matches)} матчей · ${n(t.WWCD)} побед</div>
+                </div>
+            </div>
+            <div class="team-card-body">`;
+
+        if (players.length > 0) {
+            html += `<div class="roster-section">
+                <div class="roster-title">👥 Состав</div>
+                <div class="roster-chips">`;
+            players.forEach(p => {
+                html += `<span class="roster-chip" onclick="openPlayerModal('${p.replace(/'/g,"\\'")}')">🎮 ${p}</span>`;
+            });
+            html += `</div></div>`;
+        }
+
+        html += `<div class="team-stats-mini">
+            <div class="mini-stat"><div class="mini-stat-val">${n(t.Kills)}</div><div class="mini-stat-label">Киллы</div></div>
+            <div class="mini-stat"><div class="mini-stat-val">${kpg}</div><div class="mini-stat-label">Kill/матч</div></div>
+            <div class="mini-stat"><div class="mini-stat-val">${n(t.WWCD)}</div><div class="mini-stat-label">Победы</div></div>
+        </div>
+        <div class="team-details">
+            <div class="detail-row"><span>Урон</span><span>${Math.round(n(t.DamageDealt))}</span></div>
+            <div class="detail-row"><span>Урон/матч</span><span>${dpg}</span></div>
+            <div class="detail-row"><span>Нокауты</span><span>${n(t.Knocks)}</span></div>
+            <div class="detail-row"><span>Реанимации</span><span>${n(t.Revives)}</span></div>
+            <div class="detail-row"><span>Хедшоты</span><span>${n(t.HeadshotKills)}</span></div>
+            <div class="detail-row"><span>Аптечки</span><span>${n(t.Heals)}</span></div>
+        </div>
+        </div></div>`;
+    });
+    html += '</div>';
+
+    cont.innerHTML = html;
+    loading.style.display = 'none';
+    cont.style.display = 'block';
+}
+
+function filterTeams() {
+    renderTeams(document.getElementById('team-search').value);
+}
+
+// ─────────────────────────────────────────────
+// RENDER PLAYERS TABLE
+// ─────────────────────────────────────────────
+function renderPlayersTable() {
+    const loading  = document.getElementById('players-loading');
+    const cont     = document.getElementById('players-table-container');
+    const searchQ  = document.getElementById('player-search').value.toLowerCase();
+    const teamQ    = document.getElementById('player-team-filter').value;
+    const sortBy   = document.getElementById('player-sort').value;
+
+    if (allPlayersData.length === 0) {
+        loading.style.display = 'flex'; cont.style.display = 'none'; return;
+    }
+
+    // Populate team filter once
+    const filterEl = document.getElementById('player-team-filter');
+    if (filterEl.children.length <= 1) {
+        const teams = [...new Set(allPlayersData.map(p => p.Team).filter(Boolean))].sort();
+        teams.forEach(t => {
+            const o = document.createElement('option');
+            o.value = t; o.textContent = t;
+            filterEl.appendChild(o);
+        });
+    }
+
+    let players = [...allPlayersData];
+    if (searchQ) players = players.filter(p => p.Player.toLowerCase().includes(searchQ) || p.Team.toLowerCase().includes(searchQ));
+    if (teamQ)   players = players.filter(p => p.Team === teamQ);
+
+    const sortFns = {
+        kd:     p => n(p.KD) || (n(p.Deaths) > 0 ? n(p.Kills)/n(p.Deaths) : n(p.Kills)),
+        kills:  p => n(p.Kills),
+        damage: p => n(p.DamageDealt),
+        kda:    p => n(p.KDA) || ((n(p.Kills)+n(p.Assists)) / Math.max(1, n(p.Deaths)))
+    };
+    players.sort((a,b) => (sortFns[sortBy](b)) - (sortFns[sortBy](a)));
+
+    if (players.length === 0) {
+        loading.style.display = 'none';
+        cont.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>Игрок не найден</p></div>`;
+        cont.style.display = 'block'; return;
+    }
+
+    let html = `<div class="table-wrapper"><table><thead><tr>
+        <th>#</th>
+        <th>Игрок</th>
+        <th>Команда</th>
+        <th>Матчи</th>
+        <th>K/D</th>
+        <th>KDA</th>
+        <th>KAS%</th>
+        <th>Киллы</th>
+        <th>Смерти</th>
+        <th>Нокауты</th>
+        <th>Урон</th>
+        <th>Хедшоты</th>
+        <th>Longest Kill</th>
+    </tr></thead><tbody>`;
+
+    players.forEach((p, i) => {
+        const kills  = n(p.Kills);
+        const deaths = Math.max(1, n(p.Deaths));
+        const kd     = n(p.KD)  || (kills / deaths);
+        const kda    = n(p.KDA) || ((kills + n(p.Assists)) / deaths);
+        const kas    = n(p.KAS) ? (n(p.KAS)*100).toFixed(0)+'%' : '—';
+        const kdClass = kd >= 1.5 ? 'kd-good' : kd < 0.8 ? 'kd-bad' : '';
+
+        html += `<tr onclick="openPlayerModal('${p.Player.replace(/'/g,"\\'")}')">
+            <td><span class="rank-cell">${i+1}</span></td>
+            <td><strong>${p.Player}</strong></td>
+            <td>${p.Team||'—'}</td>
+            <td>${n(p.Matches)}</td>
+            <td class="${kdClass}">${kd.toFixed(2)}</td>
+            <td>${kda.toFixed(2)}</td>
+            <td>${kas}</td>
+            <td>${kills}</td>
+            <td>${n(p.Deaths)}</td>
+            <td>${n(p.Knocks)}</td>
+            <td>${Math.round(n(p.DamageDealt))}</td>
+            <td>${n(p.HeadshotKills)}</td>
+            <td>${n(p.LongestKill)}м</td>
+        </tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    cont.innerHTML = html;
+    loading.style.display = 'none';
+    cont.style.display = 'block';
+}
+
+function filterPlayers() { renderPlayersTable(); }
+
+// ─────────────────────────────────────────────
+// PLAYER MODAL
+// ─────────────────────────────────────────────
+function openPlayerModal(name) {
+    const p = allPlayersData.find(x => x.Player === name);
+    if (!p) return;
+
+    const kills  = n(p.Kills);
+    const deaths = Math.max(1, n(p.Deaths));
+    const kd     = (n(p.KD) || kills/deaths).toFixed(2);
+    const kda    = (n(p.KDA) || (kills+n(p.Assists))/deaths).toFixed(2);
+    const kas    = n(p.KAS) ? (n(p.KAS)*100).toFixed(0)+'%' : '—';
+
+    document.getElementById('modal-content').innerHTML = `
+        <div class="modal-header">
+            <div class="modal-avatar">${initials(p.Player)}</div>
+            <div>
+                <div class="modal-player-name">${p.Player}</div>
+                <div class="modal-team-name">🛡️ ${p.Team||'—'}</div>
+            </div>
+            <button class="modal-close" onclick="closeModalBtn()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-kpi-grid">
+                <div class="kpi-card"><div class="kpi-val">${kd}</div><div class="kpi-label">K/D</div></div>
+                <div class="kpi-card"><div class="kpi-val">${kills}</div><div class="kpi-label">Киллы</div></div>
+                <div class="kpi-card"><div class="kpi-val">${Math.round(n(p.DamageDealt))}</div><div class="kpi-label">Урон</div></div>
+            </div>
+
+            <div class="modal-section-title">📊 Рейтинг</div>
+            <div class="modal-stat-grid">
+                <div class="modal-stat-row"><span>KDA</span><span>${kda}</span></div>
+                <div class="modal-stat-row"><span>KAS</span><span>${kas}</span></div>
+                <div class="modal-stat-row"><span>Матчи</span><span>${n(p.Matches)}</span></div>
+                <div class="modal-stat-row"><span>Смерти</span><span>${n(p.Deaths)}</span></div>
+            </div>
+
+            <div class="modal-section-title">⚔️ Боевая статистика</div>
+            <div class="modal-stat-grid">
+                <div class="modal-stat-row"><span>Нокауты</span><span>${n(p.Knocks)}</span></div>
+                <div class="modal-stat-row"><span>Ассисты</span><span>${n(p.Assists)}</span></div>
+                <div class="modal-stat-row"><span>Хедшоты</span><span>${n(p.HeadshotKills)}</span></div>
+                <div class="modal-stat-row"><span>Longest Kill</span><span>${n(p.LongestKill)}м</span></div>
+                <div class="modal-stat-row"><span>Реанимации</span><span>${n(p.Revives)}</span></div>
+                <div class="modal-stat-row"><span>Время выживания</span><span>${n(p.TimeSurvived)}</span></div>
+            </div>
+        </div>
+    `;
+    document.getElementById('player-modal').classList.add('open');
+}
+
+function closeModal(e) { if (e.target.id === 'player-modal') document.getElementById('player-modal').classList.remove('open'); }
+function closeModalBtn() { document.getElementById('player-modal').classList.remove('open'); }
+
+// ─────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────
+function switchTab(name, event) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    if (event) event.target.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById(`${name}-tab`).classList.add('active');
+
+    if (name === 'charts') renderCharts();
+}
+
+// ─────────────────────────────────────────────
+// REFRESH
+// ─────────────────────────────────────────────
+function updateLastUpdateTime() {
+    const now = new Date();
+    document.getElementById('last-update').textContent = 'Обновлено: ' + now.toLocaleTimeString('ru-RU');
+}
+
+async function refreshAll() {
+    await loadAllData();
+    const activeTab = document.querySelector('.tab-content.active')?.id?.replace('-tab','');
+    if (activeTab === 'main')    renderMainTable();
+    if (activeTab === 'charts')  renderCharts();
+    if (activeTab === 'teams')   renderTeams(document.getElementById('team-search').value);
+    if (activeTab === 'players') renderPlayersTable();
+}
+
+async function manualRefresh() {
+    const btn = document.getElementById('refresh-btn');
+    btn.classList.add('spinning');
+    btn.disabled = true;
+    await refreshAll();
+    btn.classList.remove('spinning');
+    btn.disabled = false;
+    refreshCountdown = CONFIG.AUTO_REFRESH_SEC;
+}
+
+function startAutoRefresh() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(async () => {
+        refreshCountdown--;
+        document.getElementById('next-refresh').textContent = refreshCountdown + 'с';
+        const pct = (refreshCountdown / CONFIG.AUTO_REFRESH_SEC) * 100;
+        document.getElementById('progress-bar').style.width = pct + '%';
+
+        if (refreshCountdown <= 0) {
+            refreshCountdown = CONFIG.AUTO_REFRESH_SEC;
+            await refreshAll();
+        }
+    }, 1000);
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+window.onload = async function() {
+    await loadAllData();
+    renderMainTable();
+    startAutoRefresh();
+};
+</script>
 </body>
 </html>
